@@ -10,5 +10,7 @@ data class Usuario(
     val correo: String,
     val contrasena: String,
     val nivel: String,
-    val rol: String
+    val juegoPreferido: String = "",
+    val plataforma: String = "",
+    val sesionActiva: Boolean = false
 )
