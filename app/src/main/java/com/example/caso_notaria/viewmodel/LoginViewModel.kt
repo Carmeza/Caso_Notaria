@@ -27,12 +27,12 @@ class LoginViewModel : ViewModel() {
 
     // Revisa todos los campos al apretar "Entrar". Despues devuelve true si no hay errores
     fun validarTodo(): Boolean {
-        val f = _form.value
-        val e = LoginFormError(
-            correo = Validaciones.validarCorreo(f.correo),
-            contrasena = Validaciones.validarContrasena(f.contrasena)
+        val formulario = _form.value
+        val nuevosErrores = LoginFormError(
+            correo = Validaciones.validarCorreo(formulario.correo),
+            contrasena = Validaciones.validarContrasena(formulario.contrasena)
         )
-        _errores.value = e
-        return e.correo == null && e.contrasena == null
+        _errores.value = nuevosErrores
+        return nuevosErrores.correo == null && nuevosErrores.contrasena == null
     }
 }

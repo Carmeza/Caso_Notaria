@@ -49,16 +49,16 @@ class RegistroViewModel : ViewModel() {
 
     // Revisa todos los campos cuando apreta "Crear cuenta". Despues devuelve true si no hay errores
     fun validarTodo(): Boolean {
-        val f = _form.value
-        val e = RegistroFormError(
-            alias = Validaciones.validarAlias(f.alias),
-            correo = Validaciones.validarCorreo(f.correo),
-            contrasena = Validaciones.validarContrasena(f.contrasena),
-            confirmarContrasena = Validaciones.validarConfirmacion(f.contrasena, f.confirmarContrasena),
-            nivel = Validaciones.validarNivel(f.nivel)
+        val formulario = _form.value
+        val NuevosErrores = RegistroFormError(
+            alias = Validaciones.validarAlias(formulario.alias),
+            correo = Validaciones.validarCorreo(formulario.correo),
+            contrasena = Validaciones.validarContrasena(formulario.contrasena),
+            confirmarContrasena = Validaciones.validarConfirmacion(formulario.contrasena, formulario.confirmarContrasena),
+            nivel = Validaciones.validarNivel(formulario.nivel)
         )
-        _errores.value = e
-        return e.alias == null && e.correo == null && e.contrasena == null &&
-                e.confirmarContrasena == null && e.nivel == null
+        _errores.value = NuevosErrores
+        return NuevosErrores.alias == null && NuevosErrores.correo == null && NuevosErrores.contrasena == null &&
+                NuevosErrores.confirmarContrasena == null && NuevosErrores.nivel == null
     }
 }
