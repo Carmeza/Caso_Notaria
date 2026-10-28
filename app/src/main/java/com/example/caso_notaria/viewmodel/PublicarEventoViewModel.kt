@@ -83,6 +83,11 @@ class PublicarEventoViewModel : ViewModel() {
         }
     }
 
+    //la foto es opcional asi que no se valida
+    fun onFotoChange(uri: String) {
+        _uiState.update { it.copy(fotoUri = uri) }
+    }
+
     // Revisa todos los campos al apretar "Publicar evento". Devuelve true si no hay errores
     fun validarFormulario(): Boolean {
         val estado = _uiState.value

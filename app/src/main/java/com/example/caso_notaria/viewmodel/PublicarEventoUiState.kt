@@ -20,6 +20,7 @@ data class PublicarEventoErrores(
 
 // Estado de la pantalla de publicar evento
 data class PublicarEventoUiState(
+    val fotoUri: String? = null, //foto es opcional
     val nombre: String = "",
     val tipo: String = "",
     val juego: String = "",
