@@ -13,10 +13,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.caso_notaria.ui.components.BarraInferior
-import com.example.caso_notaria.ui.components.BotonPrincipal
-import com.example.caso_notaria.ui.components.BotonSecundario
 import com.example.caso_notaria.ui.components.pestanasInferiores
 import com.example.caso_notaria.ui.screens.PantallaPublicarEvento
+import com.example.caso_notaria.ui.screens.PantallaBienvenida
+import com.example.caso_notaria.ui.screens.PantallaCrearCuenta
+import com.example.caso_notaria.ui.screens.PantallaIniciarSesion
 import com.example.caso_notaria.ui.screens.PantallaTemporal
 import com.example.caso_notaria.viewmodel.MainViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -60,31 +61,42 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
             }
         }
     ) { innerPadding ->
-        // Cada ruta muestra su pantalla. Por ahora son pantallas temporales
+        // Cada ruta muestra su pantalla. Las pestañas todavia son temporales
         NavHost(
             navController = navController,
             startDestination = Screen.Bienvenida.route,
             modifier = Modifier.padding(innerPadding)
         ) {
             composable(Screen.Bienvenida.route) {
-                PantallaTemporal("Bienvenida") {
-                    BotonPrincipal("Iniciar sesión", onClick = { viewModel.navigateTo(Screen.IniciarSesion) })
-                    BotonSecundario("Crear cuenta", onClick = { viewModel.navigateTo(Screen.CrearCuenta) })
-                }
+                PantallaBienvenida(
+                    onIniciarSesion = { viewModel.navigateTo(Screen.IniciarSesion) },
+                    onCrearCuenta = { viewModel.navigateTo(Screen.CrearCuenta) }
+                )
             }
             composable(Screen.IniciarSesion.route) {
-                PantallaTemporal("Iniciar sesión") {
-                    // Al entrar se borran Bienvenida e Iniciar sesión de la pila
-                    BotonPrincipal("Entrar", onClick = {
+                PantallaIniciarSesion(
+                    // Al entrar se borran Bienvenida, Iniciar sesión del historial
+                    onLoginExitoso = {
                         viewModel.navigateTo(Screen.Eventos, popUpToRoute = Screen.Bienvenida, inclusive = true)
-                    })
-                    BotonSecundario("Volver", onClick = { viewModel.navigateBack() })
-                }
+                    },
+                    // Cambia a "Crear cuenta" sin acumular pantallas en el historial
+                    onIrACrearCuenta = {
+                        viewModel.navigateTo(Screen.CrearCuenta, popUpToRoute = Screen.Bienvenida)
+                    },
+                    onVolver = { viewModel.navigateBack() }
+                )
             }
             composable(Screen.CrearCuenta.route) {
-                PantallaTemporal("Crear cuenta") {
-                    BotonSecundario("Volver", onClick = { viewModel.navigateBack() })
-                }
+                PantallaCrearCuenta(
+                    // Despues del modal va directo a Eventos
+                    onCuentaCreada = {
+                        viewModel.navigateTo(Screen.Eventos, popUpToRoute = Screen.Bienvenida, inclusive = true)
+                    },
+                    onIrAIniciarSesion = {
+                        viewModel.navigateTo(Screen.IniciarSesion, popUpToRoute = Screen.Bienvenida)
+                    },
+                    onVolver = { viewModel.navigateBack() }
+                )
             }
             composable(Screen.Eventos.route) { PantallaTemporal("Eventos") }
             composable(Screen.Publicar.route) {
