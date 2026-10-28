@@ -17,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -29,7 +30,9 @@ fun CampoTexto(
     modifier: Modifier = Modifier,
     error: String? = null,
     esContrasena: Boolean = false,
-    tipoTeclado: KeyboardType = KeyboardType.Text
+    tipoTeclado: KeyboardType = KeyboardType.Text,
+    icono: ImageVector? = null,
+    lineas: Int = 1
 ) {
     var mostrarContrasena by remember { mutableStateOf(false) }
 
@@ -37,6 +40,7 @@ fun CampoTexto(
         value = valor,
         onValueChange = onCambio,
         label = { Text(etiqueta) },
+        leadingIcon = icono?.let { { Icon(it, contentDescription = null) } },
         isError = error != null,
         supportingText = error?.let { { Text(it) } },
         trailingIcon = {
@@ -54,7 +58,8 @@ fun CampoTexto(
         },
         visualTransformation = if (esContrasena && !mostrarContrasena) PasswordVisualTransformation() else VisualTransformation.None,
         keyboardOptions = KeyboardOptions(keyboardType = if (esContrasena) KeyboardType.Password else tipoTeclado),
-        singleLine = true,
+        singleLine = lineas == 1,
+        minLines = lineas,
         shape = MaterialTheme.shapes.medium,
         modifier = modifier.fillMaxWidth()
     )
