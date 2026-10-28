@@ -16,6 +16,7 @@ import com.example.caso_notaria.ui.components.BarraInferior
 import com.example.caso_notaria.ui.components.BotonPrincipal
 import com.example.caso_notaria.ui.components.BotonSecundario
 import com.example.caso_notaria.ui.components.pestanasInferiores
+import com.example.caso_notaria.ui.screens.PantallaPublicarEvento
 import com.example.caso_notaria.ui.screens.PantallaTemporal
 import com.example.caso_notaria.viewmodel.MainViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -86,7 +87,12 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
                 }
             }
             composable(Screen.Eventos.route) { PantallaTemporal("Eventos") }
-            composable(Screen.Publicar.route) { PantallaTemporal("Publicar evento") }
+            composable(Screen.Publicar.route) {
+                // Al publicar vuelve a la pestana de eventos
+                PantallaPublicarEvento(onEventoPublicado = {
+                    viewModel.navigateTo(Screen.Eventos, popUpToRoute = Screen.Eventos, singleTop = true)
+                })
+            }
             composable(Screen.Chats.route) { PantallaTemporal("Chats") }
             composable(Screen.Perfil.route) { PantallaTemporal("Perfil") }
         }
