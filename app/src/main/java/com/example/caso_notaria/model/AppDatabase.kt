@@ -45,7 +45,7 @@ abstract class AppDatabase : RoomDatabase() {
                 super.onCreate(db)
                 INSTANCE?.let { database ->
                     CoroutineScope(Dispatchers.IO).launch {
-                        val usuarioDao = database.usuarioDao()
+                        val dao = database.usuarioDao()
                         val eventoDao = database.eventoDao()
                         val grupoChatDao = database.grupoChatDao()
                         val inscripcionDao = database.inscripcionDao()
@@ -60,7 +60,10 @@ abstract class AppDatabase : RoomDatabase() {
                             Usuario(alias = "lu.byte", correo = "lu@correo.cl", contrasena = "12345678", nivel = "Intermedio", juegoPreferido = "Call of Duty Modern Warfare", plataforma = "Consola"),
                             Usuario(alias = "Gabo_88", correo = "gabo@correo.cl", contrasena = "12345678", nivel = "Casual", juegoPreferido = "Super Smash Bros Ultimate", plataforma = "PC")
                         )
-                        for (usuario in usuariosIniciales) usuarioDao.insert(usuario)
+
+                        for (usuario in usuariosIniciales) {
+                            dao.insert(usuario)
+                        }
 
                         val eventosIniciales = listOf(
                             Evento(nombre = "Torneo Minecraft", tipo = "Competitivo", juego = "Minecraft", formato = "Equipos", plataforma = "PC", fecha = "2026-11-15", hora = "15:00", modalidad = "Online", lugar = "Servidor Privado", cupos = 50, descripcion = "Torneo de supervivencia", organizadorId = 1),
