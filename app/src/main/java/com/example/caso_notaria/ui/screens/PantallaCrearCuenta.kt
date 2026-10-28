@@ -25,8 +25,12 @@ import com.example.caso_notaria.ui.components.CampoTexto
 import com.example.caso_notaria.ui.components.ChipCategoria
 import com.example.caso_notaria.ui.theme.Caso_notariaTheme
 import com.example.caso_notaria.viewmodel.RegistroViewModel
+import androidx.compose.material3.AlertDialog
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
-private val niveles = listOf("Principiante", "Intermedio", "Avanzado")
+private val niveles = listOf("Casual", "Intermedio", "Competitivo")
 
 @Composable
 fun PantallaCrearCuenta(
@@ -37,6 +41,7 @@ fun PantallaCrearCuenta(
 ) {
     val form by viewModel.form.collectAsState()
     val errores by viewModel.errores.collectAsState()
+    var mostrarModal by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -117,7 +122,7 @@ fun PantallaCrearCuenta(
             onClick = {
                 if (viewModel.validarTodo()) {
                     // despues se guarda el usuario en la base de datos
-                    onCuentaCreada()
+                    mostrarModal = true
                 }
             }
         )
@@ -127,6 +132,23 @@ fun PantallaCrearCuenta(
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
             Text("¿Ya tienes cuenta? Iniciar sesion", color = MaterialTheme.colorScheme.secondary)
+        }
+        //Modal confirmacion cuenta creada
+        if (mostrarModal) {
+            val cerrarModal = {
+                mostrarModal = false
+                onCuentaCreada()
+            }
+            AlertDialog(
+                onDismissRequest = cerrarModal,
+                title = { Text("Cuenta creada!") },
+                text = { Text("Hola, ${form.alias}. Tu cuenta se creó correctamente.") },
+                confirmButton = {
+                    TextButton(onClick = cerrarModal) {
+                        Text("Continuar", color = MaterialTheme.colorScheme.secondary)
+                    }
+                }
+            )
         }
     }
 }
