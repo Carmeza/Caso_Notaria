@@ -19,6 +19,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun usuarioDao(): UsuarioDao
     abstract fun eventoDao(): EventoDao
     abstract fun grupoChatDao(): GrupoChatDao
+    abstract fun inscripcionDao(): InscripcionDao
+    abstract fun mensajeDao(): MensajeDao
 
     companion object {
         @Volatile
@@ -46,6 +48,8 @@ abstract class AppDatabase : RoomDatabase() {
                         val usuarioDao = database.usuarioDao()
                         val eventoDao = database.eventoDao()
                         val grupoChatDao = database.grupoChatDao()
+                        val inscripcionDao = database.inscripcionDao()
+                        val mensajeDao = database.mensajeDao()
 
                         val usuariosIniciales = listOf(
                             Usuario(alias = "kuma_07", correo = "kuma07@correo.cl", contrasena = "12345678", nivel = "Intermedio", juegoPreferido = "Minecraft", plataforma = "PC"),
@@ -56,28 +60,33 @@ abstract class AppDatabase : RoomDatabase() {
                             Usuario(alias = "lu.byte", correo = "lu@correo.cl", contrasena = "12345678", nivel = "Intermedio", juegoPreferido = "Call of Duty Modern Warfare", plataforma = "Consola"),
                             Usuario(alias = "Gabo_88", correo = "gabo@correo.cl", contrasena = "12345678", nivel = "Casual", juegoPreferido = "Super Smash Bros Ultimate", plataforma = "PC")
                         )
-
-                        for (usuario in usuariosIniciales) {
-                            usuarioDao.insert(usuario)
-                        }
+                        for (usuario in usuariosIniciales) usuarioDao.insert(usuario)
 
                         val eventosIniciales = listOf(
                             Evento(nombre = "Torneo Minecraft", tipo = "Competitivo", juego = "Minecraft", formato = "Equipos", plataforma = "PC", fecha = "2026-11-15", hora = "15:00", modalidad = "Online", lugar = "Servidor Privado", cupos = 50, descripcion = "Torneo de supervivencia", organizadorId = 1),
                             Evento(nombre = "Free Fire Casual", tipo = "Amistoso", juego = "Free Fire", formato = "Solo", plataforma = "Consola", fecha = "2026-11-20", hora = "18:00", modalidad = "Online", lugar = "Lobby Público", cupos = 100, descripcion = "Partidas amistosas", organizadorId = 2)
                         )
-
-                        for (evento in eventosIniciales) {
-                            eventoDao.insert(evento)
-                        }
+                        for (evento in eventosIniciales) eventoDao.insert(evento)
 
                         val chatsIniciales = listOf(
                             GrupoChat(eventoId = 1, nombre = "Chat Torneo Minecraft"),
                             GrupoChat(eventoId = 2, nombre = "Chat Free Fire Casual")
                         )
+                        for (chat in chatsIniciales) grupoChatDao.insert(chat)
 
-                        for (chat in chatsIniciales) {
-                            grupoChatDao.insert(chat)
-                        }
+                        val inscripcionesIniciales = listOf(
+                            Inscripcion(eventoId = 1, usuarioId = 1),
+                            Inscripcion(eventoId = 1, usuarioId = 3),
+                            Inscripcion(eventoId = 2, usuarioId = 2)
+                        )
+                        for (inscripcion in inscripcionesIniciales) inscripcionDao.insert(inscripcion)
+
+                        val mensajesIniciales = listOf(
+                            Mensaje(grupoId = 1, autorId = 1, texto = "¡Bienvenidos al torneo de Minecraft!"),
+                            Mensaje(grupoId = 1, autorId = 3, texto = "¿A qué hora empezamos exacto?"),
+                            Mensaje(grupoId = 2, autorId = 2, texto = "Agreguen para escuadra.")
+                        )
+                        for (mensaje in mensajesIniciales) mensajeDao.insert(mensaje)
                     }
                 }
             }
