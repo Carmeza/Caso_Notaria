@@ -1,5 +1,9 @@
 package com.example.caso_notaria.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -14,10 +18,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.caso_notaria.ui.components.BarraInferior
 import com.example.caso_notaria.ui.components.pestanasInferiores
-import com.example.caso_notaria.ui.screens.PantallaPublicarEvento
 import com.example.caso_notaria.ui.screens.PantallaBienvenida
 import com.example.caso_notaria.ui.screens.PantallaCrearCuenta
 import com.example.caso_notaria.ui.screens.PantallaIniciarSesion
+import com.example.caso_notaria.ui.screens.PantallaPublicarEvento
 import com.example.caso_notaria.ui.screens.PantallaTemporal
 import com.example.caso_notaria.viewmodel.MainViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -43,7 +47,6 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
         }
     }
 
-    // La barra inferior solo aparece en las 4 pestañas
     val entradaActual by navController.currentBackStackEntryAsState()
     val rutaActual = entradaActual?.destination?.route
     val mostrarBarra = pestanasInferiores.any { it.screen.route == rutaActual }
@@ -61,11 +64,29 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
             }
         }
     ) { innerPadding ->
-        // Cada ruta muestra su pantalla. Las pestañas todavia son temporales
         NavHost(
             navController = navController,
             startDestination = Screen.Bienvenida.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            // Transición uniforme: desliza desde la izquierda para todas las pantallas
+            enterTransition = {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                    animationSpec = tween(350)
+                ) + fadeIn(animationSpec = tween(350))
+            },
+            exitTransition = {
+                fadeOut(animationSpec = tween(350))
+            },
+            popEnterTransition = {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                    animationSpec = tween(350)
+                ) + fadeIn(animationSpec = tween(350))
+            },
+            popExitTransition = {
+                fadeOut(animationSpec = tween(350))
+            }
         ) {
             composable(Screen.Bienvenida.route) {
                 PantallaBienvenida(
@@ -75,11 +96,9 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
             }
             composable(Screen.IniciarSesion.route) {
                 PantallaIniciarSesion(
-                    // Al entrar se borran Bienvenida, Iniciar sesión del historial
                     onLoginExitoso = {
                         viewModel.navigateTo(Screen.Eventos, popUpToRoute = Screen.Bienvenida, inclusive = true)
                     },
-                    // Cambia a "Crear cuenta" sin acumular pantallas en el historial
                     onIrACrearCuenta = {
                         viewModel.navigateTo(Screen.CrearCuenta, popUpToRoute = Screen.Bienvenida)
                     },
@@ -88,7 +107,6 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
             }
             composable(Screen.CrearCuenta.route) {
                 PantallaCrearCuenta(
-                    // Despues del modal va directo a Eventos
                     onCuentaCreada = {
                         viewModel.navigateTo(Screen.Eventos, popUpToRoute = Screen.Bienvenida, inclusive = true)
                     },
@@ -100,7 +118,6 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
             }
             composable(Screen.Eventos.route) { PantallaTemporal("Eventos") }
             composable(Screen.Publicar.route) {
-                // Al publicar vuelve a la pestana de eventos
                 PantallaPublicarEvento(onEventoPublicado = {
                     viewModel.navigateTo(Screen.Eventos, popUpToRoute = Screen.Eventos, singleTop = true)
                 })
