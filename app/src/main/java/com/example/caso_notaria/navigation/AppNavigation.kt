@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -21,6 +22,7 @@ import com.example.caso_notaria.ui.components.pestanasInferiores
 import com.example.caso_notaria.ui.screens.PantallaBienvenida
 import com.example.caso_notaria.ui.screens.PantallaCrearCuenta
 import com.example.caso_notaria.ui.screens.PantallaIniciarSesion
+import com.example.caso_notaria.ui.screens.PantallaPerfil
 import com.example.caso_notaria.ui.screens.PantallaPublicarEvento
 import com.example.caso_notaria.ui.screens.PantallaTemporal
 import com.example.caso_notaria.viewmodel.MainViewModel
@@ -96,7 +98,8 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
             }
             composable(Screen.IniciarSesion.route) {
                 PantallaIniciarSesion(
-                    onLoginExitoso = {
+                    onLoginExitoso = { usuarioId ->
+                        viewModel.establecerUsuarioActual(usuarioId)
                         viewModel.navigateTo(Screen.Eventos, popUpToRoute = Screen.Bienvenida, inclusive = true)
                     },
                     onIrACrearCuenta = {
@@ -107,7 +110,9 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
             }
             composable(Screen.CrearCuenta.route) {
                 PantallaCrearCuenta(
-                    onCuentaCreada = {
+                    onCuentaCreada = { nuevoUsuarioId ->
+                        // Guarda la ID en el ViewModel principal e inicia la sesión
+                        viewModel.establecerUsuarioActual(nuevoUsuarioId)
                         viewModel.navigateTo(Screen.Eventos, popUpToRoute = Screen.Bienvenida, inclusive = true)
                     },
                     onIrAIniciarSesion = {
@@ -123,7 +128,19 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
                 })
             }
             composable(Screen.Chats.route) { PantallaTemporal("Chats") }
-            composable(Screen.Perfil.route) { PantallaTemporal("Perfil") }
+            composable(Screen.Perfil.route) {
+                val usuarioIdActual by viewModel.usuarioActualId.collectAsState()
+                PantallaPerfil(
+                    usuarioId = usuarioIdActual,
+                    onCerrarSesion = {
+                        viewModel.navigateTo(
+                            screen = Screen.Bienvenida,
+                            popUpToRoute = Screen.Eventos,
+                            inclusive = true
+                        )
+                    }
+                )
+            }
         }
     }
 }

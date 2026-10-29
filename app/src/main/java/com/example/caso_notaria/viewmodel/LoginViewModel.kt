@@ -1,38 +1,64 @@
 package com.example.caso_notaria.viewmodel
 
-import androidx.lifecycle.ViewModel
-import com.example.caso_notaria.model.LoginForm
-import com.example.caso_notaria.model.LoginFormError
-import com.example.caso_notaria.model.Validaciones
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import com.example.caso_notaria.model.AppDatabase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
-class LoginViewModel : ViewModel() {
+data class LoginFormState(
+    val correo: String = "",
+    val contrasena: String = ""
+)
 
-    private val _form = MutableStateFlow(LoginForm())
-    val form: StateFlow<LoginForm> = _form
+data class LoginErroresState(
+    val correo: String? = null,
+    val contrasena: String? = null
+)
 
-    private val _errores = MutableStateFlow(LoginFormError())
-    val errores: StateFlow<LoginFormError> = _errores
+class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
-    fun onCorreoChange(valor: String) {
-        _form.value = _form.value.copy(correo = valor)
-        _errores.value = _errores.value.copy(correo = Validaciones.validarCorreo(valor))
+    private val db = AppDatabase.getDatabase(application)
+    private val usuarioDao = db.usuarioDao()
+
+    private val _form = MutableStateFlow(LoginFormState())
+    val form: StateFlow<LoginFormState> = _form.asStateFlow()
+
+    private val _errores = MutableStateFlow(LoginErroresState())
+    val errores: StateFlow<LoginErroresState> = _errores.asStateFlow()
+
+    fun onCorreoChange(correo: String) {
+        _form.value = _form.value.copy(correo = correo)
+        _errores.value = _errores.value.copy(correo = null)
     }
 
-    fun onContrasenaChange(valor: String) {
-        _form.value = _form.value.copy(contrasena = valor)
-        _errores.value = _errores.value.copy(contrasena = Validaciones.validarContrasena(valor))
+    fun onContrasenaChange(contrasena: String) {
+        _form.value = _form.value.copy(contrasena = contrasena)
+        _errores.value = _errores.value.copy(contrasena = null)
     }
 
-    // Revisa todos los campos al apretar "Entrar". Despues devuelve true si no hay errores
     fun validarTodo(): Boolean {
-        val formulario = _form.value
-        val nuevosErrores = LoginFormError(
-            correo = Validaciones.validarCorreo(formulario.correo),
-            contrasena = Validaciones.validarContrasena(formulario.contrasena)
-        )
-        _errores.value = nuevosErrores
-        return nuevosErrores.correo == null && nuevosErrores.contrasena == null
+        var valido = true
+        var errCorreo: String? = null
+        var errContrasena: String? = null
+
+        if (_form.value.correo.isBlank()) {
+            errCorreo = "El correo es requerido"
+            valido = false
+        }
+        if (_form.value.contrasena.isBlank()) {
+            errContrasena = "La contraseña es requerida"
+            valido = false
+        }
+
+        _errores.value = LoginErroresState(correo = errCorreo, contrasena = errContrasena)
+        return valido
+    }
+
+    suspend fun obtenerUsuarioIdPorCorreo(): Int {
+        val correoIngresado = _form.value.correo.trim()
+        val usuarioEncontrado = usuarioDao.buscarPorCorreo(correoIngresado)
+        return usuarioEncontrado?.id ?: 1
     }
 }

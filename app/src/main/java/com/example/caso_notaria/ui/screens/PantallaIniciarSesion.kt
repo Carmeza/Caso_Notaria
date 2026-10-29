@@ -12,24 +12,57 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.caso_notaria.ui.components.BotonPrincipal
 import com.example.caso_notaria.ui.components.CampoTexto
+import com.example.caso_notaria.ui.theme.Caso_notariaTheme
+import com.example.caso_notaria.viewmodel.LoginFormState
+import com.example.caso_notaria.viewmodel.LoginErroresState
 import com.example.caso_notaria.viewmodel.LoginViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
 fun PantallaIniciarSesion(
-    onLoginExitoso: () -> Unit,
+    onLoginExitoso: (Int) -> Unit,
     onIrACrearCuenta: () -> Unit,
     onVolver: () -> Unit,
     viewModel: LoginViewModel = viewModel()
 ) {
     val form by viewModel.form.collectAsState()
     val errores by viewModel.errores.collectAsState()
+    val scope = rememberCoroutineScope()
 
+    PantallaIniciarSesionContent(
+        form = form,
+        errores = errores,
+        onCorreoChange = viewModel::onCorreoChange,
+        onContrasenaChange = viewModel::onContrasenaChange,
+        onValidarYEntrar = {
+            if (viewModel.validarTodo()) {
+                scope.launch {
+                    val usuarioId = viewModel.obtenerUsuarioIdPorCorreo()
+                    onLoginExitoso(usuarioId)
+                }
+            }
+        },
+        onIrACrearCuenta = onIrACrearCuenta,
+        onVolver = onVolver
+    )
+}
+
+@Composable
+fun PantallaIniciarSesionContent(
+    form: LoginFormState,
+    errores: LoginErroresState,
+    onCorreoChange: (String) -> Unit,
+    onContrasenaChange: (String) -> Unit,
+    onValidarYEntrar: () -> Unit,
+    onIrACrearCuenta: () -> Unit,
+    onVolver: () -> Unit
+) {
     var cargando by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -62,14 +95,14 @@ fun PantallaIniciarSesion(
 
             CampoTexto(
                 valor = form.correo,
-                onCambio = viewModel::onCorreoChange,
+                onCambio = onCorreoChange,
                 etiqueta = "Correo",
                 error = errores.correo,
                 tipoTeclado = KeyboardType.Email
             )
             CampoTexto(
                 valor = form.contrasena,
-                onCambio = viewModel::onContrasenaChange,
+                onCambio = onContrasenaChange,
                 etiqueta = "Contraseña",
                 error = errores.contrasena,
                 esContrasena = true
@@ -81,13 +114,11 @@ fun PantallaIniciarSesion(
                 texto = "Entrar",
                 habilitado = !cargando,
                 onClick = {
-                    if (viewModel.validarTodo()) {
-                        scope.launch {
-                            cargando = true
-                            delay(1500) // Simulación de verificación/carga
-                            cargando = false
-                            onLoginExitoso()
-                        }
+                    scope.launch {
+                        cargando = true
+                        delay(1200)
+                        cargando = false
+                        onValidarYEntrar()
                     }
                 }
             )
@@ -101,7 +132,6 @@ fun PantallaIniciarSesion(
             }
         }
 
-        // Overlay con pantalla de carga centrada
         AnimatedVisibility(
             visible = cargando,
             enter = fadeIn(),
@@ -121,5 +151,21 @@ fun PantallaIniciarSesion(
                 )
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PantallaIniciarSesionPreview() {
+    Caso_notariaTheme {
+        PantallaIniciarSesionContent(
+            form = LoginFormState(correo = "kuma07@correo.cl"),
+            errores = LoginErroresState(),
+            onCorreoChange = {},
+            onContrasenaChange = {},
+            onValidarYEntrar = {},
+            onIrACrearCuenta = {},
+            onVolver = {}
+        )
     }
 }
