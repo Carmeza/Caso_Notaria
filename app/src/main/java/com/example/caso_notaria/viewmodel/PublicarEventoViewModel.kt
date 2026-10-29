@@ -88,6 +88,11 @@ class PublicarEventoViewModel(application: Application) : AndroidViewModel(appli
         }
     }
 
+    // Punto elegido en el mapa o leido del GPS
+    fun onUbicacionChange(latitud: Double, longitud: Double) {
+        _uiState.update { it.copy(latitud = latitud, longitud = longitud) }
+    }
+
     fun onDescripcionChange(valor: String) {
         _uiState.update {
             it.copy(descripcion = valor, errores = it.errores.copy(descripcion = ValidacionesEvento.validarDescripcion(valor)))

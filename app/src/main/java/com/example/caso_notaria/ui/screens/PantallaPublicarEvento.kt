@@ -22,6 +22,7 @@ import com.example.caso_notaria.ui.components.BotonPrincipal
 import com.example.caso_notaria.ui.components.CampoTexto
 import com.example.caso_notaria.ui.components.ChipCategoria
 import com.example.caso_notaria.ui.components.CamaraFotoLugar
+import com.example.caso_notaria.ui.components.MapaSelectorUbicacion
 import com.example.caso_notaria.ui.theme.Caso_notariaTheme
 import com.example.caso_notaria.viewmodel.PublicarEventoViewModel
 
@@ -176,6 +177,11 @@ fun PantallaPublicarEvento(
                 etiqueta = "Lugar *",
                 error = estado.errores.lugar,
                 icono = Icons.Filled.Place
+            )
+            MapaSelectorUbicacion(
+                latitud = estado.latitud,
+                longitud = estado.longitud,
+                onUbicacionElegida = viewModel::onUbicacionChange
             )
         }
 
