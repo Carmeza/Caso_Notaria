@@ -1,6 +1,13 @@
 package com.example.caso_notaria.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.caso_notaria.model.AppDatabase
+import com.example.caso_notaria.model.Evento
+import com.example.caso_notaria.repository.EventoRepository
+import com.example.caso_notaria.repository.UsuarioRepository
+import kotlinx.coroutines.launch
 import com.example.caso_notaria.model.ValidacionesEvento
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -9,8 +16,12 @@ import kotlinx.coroutines.flow.update
 import java.util.Calendar
 import java.util.TimeZone
 
-class PublicarEventoViewModel : ViewModel() {
-
+class PublicarEventoViewModel(application: Application) : AndroidViewModel(application) {
+    private val db by lazy { AppDatabase.getDatabase(getApplication<Application>()) }
+    private val eventoRepository by lazy {
+        EventoRepository(db.eventoDao(), db.inscripcionDao(), db.grupoChatDao(), db.usuarioDao())
+    }
+    private val usuarioRepository by lazy { UsuarioRepository(db.usuarioDao()) }
     private val _uiState = MutableStateFlow(PublicarEventoUiState())
     val uiState: StateFlow<PublicarEventoUiState> = _uiState.asStateFlow()
 
@@ -107,12 +118,39 @@ class PublicarEventoViewModel : ViewModel() {
         return !errores.hayErrores()
     }
 
+    //guarda el evento en room con la foto y el usuario activo como organizador
+    //eventoRepository tasmbien le crea su grupo en el chat
     fun publicarEvento() {
+        if (_uiState.value.publicando) return
         if (!validarFormulario()) return
-        // falta guardar el evento en room cuando esten los daos
-        _uiState.update { it.copy(publicado = true) }
+        val estado = _uiState.value
+        viewModelScope.launch {
+            _uiState.update { it.copy(publicando = true) }
+            val usuario = usuarioRepository.obtenerUsuarioActivo()
+            if (usuario == null) {
+                _uiState.update { it.copy(publicando = false) }
+                return@launch
+            }
+            eventoRepository.publicarEvento(
+                Evento(
+                    nombre = estado.nombre.trim(),
+                    tipo = estado.tipo,
+                    juego = estado.juego.trim(),
+                    formato = estado.formato.trim(),
+                    plataforma = estado.plataforma,
+                    fecha = estado.fechaTexto,
+                    hora = estado.hora,
+                    modalidad = estado.modalidad,
+                    lugar = if (estado.modalidad == "Presencial") estado.lugar.trim() else "",
+                    fotoUri = estado.fotoUri,
+                    cupos = estado.cupos.toInt(),
+                    descripcion = estado.descripcion.trim(),
+                    organizadorId = usuario.id
+                )
+            )
+            _uiState.update { it.copy(publicando = false, publicado = true) }
+        }
     }
-
     // Se llama al cerrar el aviso de evento publicado
     fun limpiarFormulario() {
         _uiState.value = PublicarEventoUiState()

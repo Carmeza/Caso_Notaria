@@ -195,6 +195,7 @@ fun PantallaPublicarEvento(
 
         BotonPrincipal(
             texto = "Publicar evento",
+            cargando = estado.publicando,
             onClick = viewModel::publicarEvento
         )
     }
