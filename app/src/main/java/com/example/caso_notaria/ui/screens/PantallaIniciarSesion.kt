@@ -18,6 +18,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -36,6 +37,7 @@ fun PantallaIniciarSesion(
     onVolver: () -> Unit,
     viewModel: LoginViewModel = viewModel()
 ) {
+    val context = LocalContext.current // Obtenemos el contexto para Room
     val form by viewModel.form.collectAsState()
     val errores by viewModel.errores.collectAsState()
     var cargando by remember { mutableStateOf(false) }
@@ -94,8 +96,9 @@ fun PantallaIniciarSesion(
                     if (viewModel.validarTodo()) {
                         scope.launch {
                             cargando = true
-                            delay(1500) // Simulación de verificación/carga
-                            val usuarioId = viewModel.obtenerUsuarioIdPorCorreo()
+                            delay(1000)
+                            // Pasamos 'context' como argumento al ViewModel
+                            val usuarioId = viewModel.obtenerUsuarioIdPorCorreo(context)
                             cargando = false
                             onLoginExitoso(usuarioId)
                         }

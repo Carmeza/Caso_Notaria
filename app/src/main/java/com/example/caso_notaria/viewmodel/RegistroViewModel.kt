@@ -1,7 +1,7 @@
 package com.example.caso_notaria.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import android.content.Context
+import androidx.lifecycle.ViewModel
 import com.example.caso_notaria.model.AppDatabase
 import com.example.caso_notaria.model.RegistroForm
 import com.example.caso_notaria.model.RegistroFormError
@@ -9,17 +9,15 @@ import com.example.caso_notaria.model.Usuario
 import com.example.caso_notaria.model.Validaciones
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
-class RegistroViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val db = AppDatabase.getDatabase(application)
-    private val usuarioDao = db.usuarioDao()
+class RegistroViewModel : ViewModel() {
 
     private val _form = MutableStateFlow(RegistroForm())
-    val form: StateFlow<RegistroForm> = _form
+    val form: StateFlow<RegistroForm> = _form.asStateFlow()
 
     private val _errores = MutableStateFlow(RegistroFormError())
-    val errores: StateFlow<RegistroFormError> = _errores
+    val errores: StateFlow<RegistroFormError> = _errores.asStateFlow()
 
     fun onAliasChange(valor: String) {
         _form.value = _form.value.copy(alias = valor)
@@ -68,8 +66,9 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
                 nuevosErrores.confirmarContrasena == null && nuevosErrores.nivel == null
     }
 
-    // Inserta el usuario en Room y retorna su ID generado
-    suspend fun registrarUsuario(): Int {
+    // Inserta el usuario en Room y retorna su ID generado utilizando el Context enviado desde Compose
+    suspend fun registrarUsuario(context: Context): Int {
+        val db = AppDatabase.getDatabase(context)
         val formulario = _form.value
         val nuevoUsuario = Usuario(
             alias = formulario.alias.trim(),
@@ -79,7 +78,7 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
             juegoPreferido = "Sin definir",
             plataforma = "PC"
         )
-        val idGenerado = usuarioDao.insert(nuevoUsuario)
+        val idGenerado = db.usuarioDao().insert(nuevoUsuario)
         return idGenerado.toInt()
     }
 }

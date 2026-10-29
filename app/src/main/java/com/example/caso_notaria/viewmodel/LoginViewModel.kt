@@ -1,7 +1,7 @@
 package com.example.caso_notaria.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import android.content.Context
+import androidx.lifecycle.ViewModel
 import com.example.caso_notaria.model.AppDatabase
 import com.example.caso_notaria.model.LoginForm
 import com.example.caso_notaria.model.LoginFormError
@@ -10,10 +10,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class LoginViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val db = AppDatabase.getDatabase(application)
-    private val usuarioDao = db.usuarioDao()
+class LoginViewModel : ViewModel() {
 
     private val _form = MutableStateFlow(LoginForm())
     val form: StateFlow<LoginForm> = _form.asStateFlow()
@@ -41,10 +38,10 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         return nuevosErrores.correo == null && nuevosErrores.contrasena == null
     }
 
-    // Busca en Room el ID real según el correo ingresado
-    suspend fun obtenerUsuarioIdPorCorreo(): Int {
+    suspend fun obtenerUsuarioIdPorCorreo(context: Context): Int {
+        val db = AppDatabase.getDatabase(context)
         val correoIngresado = _form.value.correo.trim()
-        val usuarioEncontrado = usuarioDao.buscarPorCorreo(correoIngresado)
+        val usuarioEncontrado = db.usuarioDao().buscarPorCorreo(correoIngresado)
         return usuarioEncontrado?.id ?: -1
     }
 }
