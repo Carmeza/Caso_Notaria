@@ -25,6 +25,11 @@ import com.example.caso_notaria.ui.screens.PantallaPublicarEvento
 import com.example.caso_notaria.ui.screens.PantallaTemporal
 import com.example.caso_notaria.viewmodel.MainViewModel
 import kotlinx.coroutines.flow.collectLatest
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import com.example.caso_notaria.ui.screens.PantallaDetalleEvento
+import com.example.caso_notaria.ui.screens.PantallaEventos
+import com.example.caso_notaria.ui.screens.PantallaParticipantes
 
 @Composable
 fun AppNavigation(viewModel: MainViewModel = viewModel()) {
@@ -116,7 +121,33 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
                     onVolver = { viewModel.navigateBack() }
                 )
             }
-            composable(Screen.Eventos.route) { PantallaTemporal("Eventos") }
+            composable(Screen.Eventos.route) {
+                PantallaEventos(onEventoClick = { eventoId ->
+                    viewModel.navigateTo(Screen.DetalleEvento(eventoId))
+                })
+            }
+            composable(
+                route = Screen.DetalleEvento.RUTA,
+                arguments = listOf(navArgument("eventoId") { type = NavType.IntType })
+            ) { entrada ->
+                val eventoId = entrada.arguments?.getInt("eventoId") ?: 0
+                PantallaDetalleEvento(
+                    eventoId = eventoId,
+                    onVolver = { viewModel.navigateBack() },
+                    onVerParticipantes = { viewModel.navigateTo(Screen.Participantes(eventoId)) },
+                    // Va a la pestana de chats sin dejar el detalle en el historial
+                    onIrAlChat = { viewModel.navigateTo(Screen.Chats, popUpToRoute = Screen.Eventos, singleTop = true) }
+                )
+            }
+            composable(
+                route = Screen.Participantes.RUTA,
+                arguments = listOf(navArgument("eventoId") { type = NavType.IntType })
+            ) { entrada ->
+                PantallaParticipantes(
+                    eventoId = entrada.arguments?.getInt("eventoId") ?: 0,
+                    onVolver = { viewModel.navigateBack() }
+                )
+            }
             composable(Screen.Publicar.route) {
                 PantallaPublicarEvento(onEventoPublicado = {
                     viewModel.navigateTo(Screen.Eventos, popUpToRoute = Screen.Eventos, singleTop = true)
