@@ -66,16 +66,17 @@ abstract class AppDatabase : RoomDatabase() {
 
                 // Los tipos y el formato de fecha deben ser los mismos que en publicar evento
                 val eventosIniciales = listOf(
-                    Evento(nombre = "Torneo Regional Smash", tipo = "Torneo", juego = "Super Smash Bros Ultimate", formato = "1v1", plataforma = "Consola", fecha = "Sáb 7 nov", hora = "15:00", modalidad = "Presencial", lugar = "Arcade Central", cupos = 64, descripcion = "Llega media hora antes para registrarte. Habrá zona de práctica libre y transmisión del cuadro final.", organizadorId = 7),
-                    Evento(nombre = "LAN Party Primavera", tipo = "LAN", juego = "Call of Duty Modern Warfare", formato = "5v5", plataforma = "PC", fecha = "Vie 13 nov", hora = "19:00", modalidad = "Presencial", lugar = "Club Gamer San Joaquín", cupos = 32, descripcion = "Trae tu equipo y audífonos. Hay mesas, enchufes y red cableada para todos.", organizadorId = 5),
+                    Evento(nombre = "Torneo Regional Smash", tipo = "Torneo", juego = "Super Smash Bros Ultimate", formato = "1v1", plataforma = "Consola", fecha = "Sáb 7 nov", hora = "15:00", modalidad = "Presencial", lugar = "Arcade Central", latitud = -33.4378, longitud = -70.6505, cupos = 64, descripcion = "Llega media hora antes para registrarte. Habrá zona de práctica libre y transmisión del cuadro final.", organizadorId = 7),
+                    Evento(nombre = "LAN Party Primavera", tipo = "LAN", juego = "Call of Duty Modern Warfare", formato = "5v5", plataforma = "PC", fecha = "Vie 13 nov", hora = "19:00", modalidad = "Presencial", lugar = "Club Gamer San Joaquín", latitud = -33.4996, longitud = -70.6161, cupos = 32, descripcion = "Trae tu equipo y audífonos. Hay mesas, enchufes y red cableada para todos.", organizadorId = 5),
                     Evento(nombre = "Lanzamiento nueva temporada Free Fire", tipo = "Lanzamiento", juego = "Free Fire", formato = "Solo", plataforma = "Consola", fecha = "Mié 18 nov", hora = "18:30", modalidad = "Online", lugar = "", cupos = 100, descripcion = "Jugamos juntos las primeras partidas de la temporada y comentamos las novedades.", organizadorId = 2),
-                    Evento(nombre = "Quedada Minecraft", tipo = "Casual", juego = "Minecraft", formato = "Equipos", plataforma = "PC", fecha = "Dom 22 nov", hora = "16:00", modalidad = "Presencial", lugar = "Arcade Central", cupos = 20, descripcion = "Tarde tranquila para construir en equipo. No importa el nivel.", organizadorId = 3)
+                    Evento(nombre = "Quedada Minecraft", tipo = "Casual", juego = "Minecraft", formato = "Equipos", plataforma = "PC", fecha = "Dom 22 nov", hora = "16:00", modalidad = "Presencial", lugar = "Arcade Central", latitud = -33.4378, longitud = -70.6505, cupos = 20, descripcion = "Tarde tranquila para construir en equipo. No importa el nivel.", organizadorId = 3)
                 )
                 for (evento in eventosIniciales) {
                     insertar(db, "eventos", contentValuesOf(
                         "nombre" to evento.nombre, "tipo" to evento.tipo, "juego" to evento.juego,
                         "formato" to evento.formato, "plataforma" to evento.plataforma, "fecha" to evento.fecha,
                         "hora" to evento.hora, "modalidad" to evento.modalidad, "lugar" to evento.lugar,
+                        "latitud" to evento.latitud, "longitud" to evento.longitud,
                         "cupos" to evento.cupos, "descripcion" to evento.descripcion, "organizadorId" to evento.organizadorId
                     ))
                 }

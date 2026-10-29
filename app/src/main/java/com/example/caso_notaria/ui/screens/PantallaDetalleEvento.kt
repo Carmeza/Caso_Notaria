@@ -37,6 +37,7 @@ import com.example.caso_notaria.ui.components.iconoTipo
 import com.example.caso_notaria.ui.theme.TurquesaOscuro
 import com.example.caso_notaria.ui.theme.VioletaOscuro
 import com.example.caso_notaria.viewmodel.DetalleEventoViewModel
+import com.example.caso_notaria.ui.components.MapaEvento
 import android.net.Uri
 import android.provider.MediaStore
 import androidx.compose.foundation.Image
@@ -184,6 +185,11 @@ fun PantallaDetalleEvento(
                         }
                         FilaDato(Icons.Filled.SportsEsports, "${evento.juego} · ${evento.formato}", evento.plataforma)
                     }
+                }
+
+                // Mapa con el lugar, solo si el evento tiene ubicacion
+                if (evento.latitud != null && evento.longitud != null) {
+                    MapaEvento(latitud = evento.latitud, longitud = evento.longitud, titulo = evento.lugar)
                 }
 
                 Text(
