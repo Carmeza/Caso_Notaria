@@ -34,5 +34,6 @@ data class PublicarEventoUiState(
     val lugar: String = "",
     val descripcion: String = "",
     val errores: PublicarEventoErrores = PublicarEventoErrores(),
+    val publicando: Boolean = false, //meintras se guarda el room
     val publicado: Boolean = false
 )
