@@ -121,9 +121,9 @@ fun PantallaCrearCuenta(
             texto = "Crear cuenta",
             onClick = {
                 if (viewModel.validarTodo()) {
+                    mostrarModal = true
                     scope.launch {
                         nuevoUsuarioId = viewModel.registrarUsuario()
-                        mostrarModal = true
                     }
                 }
             }
@@ -144,7 +144,7 @@ fun PantallaCrearCuenta(
             }
             AlertDialog(
                 onDismissRequest = cerrarModal,
-                title = { Text("¡Cuenta creada!") },
+                title = { Text("Cuenta creada!") },
                 text = { Text("Hola, ${form.alias}. Tu cuenta se creó correctamente.") },
                 confirmButton = {
                     TextButton(onClick = cerrarModal) {

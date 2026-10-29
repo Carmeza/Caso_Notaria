@@ -22,8 +22,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.caso_notaria.model.LoginForm
-import com.example.caso_notaria.model.LoginFormError
 import com.example.caso_notaria.ui.components.BotonPrincipal
 import com.example.caso_notaria.ui.components.CampoTexto
 import com.example.caso_notaria.ui.theme.Caso_notariaTheme
@@ -43,45 +41,13 @@ fun PantallaIniciarSesion(
     var cargando by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    PantallaIniciarSesionContent(
-        form = form,
-        errores = errores,
-        cargando = cargando,
-        onCorreoChange = viewModel::onCorreoChange,
-        onContrasenaChange = viewModel::onContrasenaChange,
-        onEntrarClick = {
-            if (viewModel.validarTodo()) {
-                scope.launch {
-                    cargando = true
-                    delay(1500)
-                    val usuarioId = viewModel.obtenerUsuarioIdPorCorreo()
-                    cargando = false
-                    onLoginExitoso(usuarioId)
-                }
-            }
-        },
-        onIrACrearCuenta = onIrACrearCuenta,
-        onVolver = onVolver
-    )
-}
-
-@Composable
-fun PantallaIniciarSesionContent(
-    form: LoginForm,
-    errores: LoginFormError,
-    cargando: Boolean,
-    onCorreoChange: (String) -> Unit,
-    onContrasenaChange: (String) -> Unit,
-    onEntrarClick: () -> Unit,
-    onIrACrearCuenta: () -> Unit,
-    onVolver: () -> Unit
-) {
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(24.dp),
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             IconButton(onClick = onVolver, enabled = !cargando) {
@@ -91,7 +57,7 @@ fun PantallaIniciarSesionContent(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Iniciar sesion",
+                text = "Iniciar sesión",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -105,7 +71,7 @@ fun PantallaIniciarSesionContent(
 
             CampoTexto(
                 valor = form.correo,
-                onCambio = onCorreoChange,
+                onCambio = viewModel::onCorreoChange,
                 etiqueta = "Correo",
                 error = errores.correo,
                 tipoTeclado = KeyboardType.Email
@@ -113,7 +79,7 @@ fun PantallaIniciarSesionContent(
 
             CampoTexto(
                 valor = form.contrasena,
-                onCambio = onContrasenaChange,
+                onCambio = viewModel::onContrasenaChange,
                 etiqueta = "Contraseña",
                 error = errores.contrasena,
                 esContrasena = true
@@ -124,7 +90,17 @@ fun PantallaIniciarSesionContent(
             BotonPrincipal(
                 texto = "Entrar",
                 habilitado = !cargando,
-                onClick = onEntrarClick
+                onClick = {
+                    if (viewModel.validarTodo()) {
+                        scope.launch {
+                            cargando = true
+                            delay(1500) // Simulación de verificación/carga
+                            val usuarioId = viewModel.obtenerUsuarioIdPorCorreo()
+                            cargando = false
+                            onLoginExitoso(usuarioId)
+                        }
+                    }
+                }
             )
 
             TextButton(
@@ -162,13 +138,8 @@ fun PantallaIniciarSesionContent(
 @Composable
 private fun PantallaIniciarSesionPreview() {
     Caso_notariaTheme {
-        PantallaIniciarSesionContent(
-            form = LoginForm(correo = "ejemplo@correo.cl", contrasena = "123456"),
-            errores = LoginFormError(),
-            cargando = false,
-            onCorreoChange = {},
-            onContrasenaChange = {},
-            onEntrarClick = {},
+        PantallaIniciarSesion(
+            onLoginExitoso = {},
             onIrACrearCuenta = {},
             onVolver = {}
         )
