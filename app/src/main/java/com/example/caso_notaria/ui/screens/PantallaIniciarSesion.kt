@@ -15,33 +15,29 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.caso_notaria.ui.components.BotonPrincipal
 import com.example.caso_notaria.ui.components.CampoTexto
-import com.example.caso_notaria.ui.theme.Caso_notariaTheme
 import com.example.caso_notaria.viewmodel.LoginViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun PantallaIniciarSesion(
-    onLoginExitoso: (Int) -> Unit,
+    onLoginExitoso: () -> Unit,
     onIrACrearCuenta: () -> Unit,
     onVolver: () -> Unit,
     viewModel: LoginViewModel = viewModel()
 ) {
-    val context = LocalContext.current // Obtenemos el contexto para Room
     val form by viewModel.form.collectAsState()
     val errores by viewModel.errores.collectAsState()
-    var cargando by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
+    val cargando by viewModel.cargando.collectAsState()
+    val errorLogin by viewModel.errorLogin.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -59,12 +55,12 @@ fun PantallaIniciarSesion(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Iniciar sesión",
+                text = "Hola de nuevo",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "Ingresa con tu correo y contraseña",
+                text = "Inicia sesión para ver tus eventos y los chats de tus torneos.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -87,23 +83,17 @@ fun PantallaIniciarSesion(
                 esContrasena = true
             )
 
+            // Error cuando el correo o la contrasena no coinciden con una cuenta
+            errorLogin?.let {
+                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
             BotonPrincipal(
-                texto = "Entrar",
+                texto = "Iniciar sesión",
                 habilitado = !cargando,
-                onClick = {
-                    if (viewModel.validarTodo()) {
-                        scope.launch {
-                            cargando = true
-                            delay(1000)
-                            // Pasamos 'context' como argumento al ViewModel
-                            val usuarioId = viewModel.obtenerUsuarioIdPorCorreo(context)
-                            cargando = false
-                            onLoginExitoso(usuarioId)
-                        }
-                    }
-                }
+                onClick = { viewModel.iniciarSesion(onExito = onLoginExitoso) }
             )
 
             TextButton(
@@ -115,6 +105,7 @@ fun PantallaIniciarSesion(
             }
         }
 
+        // Capa de carga mientras se revisa la cuenta
         AnimatedVisibility(
             visible = cargando,
             enter = fadeIn(),
@@ -134,17 +125,5 @@ fun PantallaIniciarSesion(
                 )
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun PantallaIniciarSesionPreview() {
-    Caso_notariaTheme {
-        PantallaIniciarSesion(
-            onLoginExitoso = {},
-            onIrACrearCuenta = {},
-            onVolver = {}
-        )
     }
 }
