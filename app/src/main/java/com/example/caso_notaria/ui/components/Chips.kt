@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 
 @Composable
 fun ChipCategoria(
@@ -37,6 +38,8 @@ fun Etiqueta(
         text = texto,
         style = MaterialTheme.typography.labelMedium,
         color = colorTexto,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
         modifier = modifier
             .background(colorFondo, MaterialTheme.shapes.small)
             .padding(horizontal = 8.dp, vertical = 2.dp)
