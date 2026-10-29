@@ -37,6 +37,13 @@ import com.example.caso_notaria.ui.components.iconoTipo
 import com.example.caso_notaria.ui.theme.TurquesaOscuro
 import com.example.caso_notaria.ui.theme.VioletaOscuro
 import com.example.caso_notaria.viewmodel.DetalleEventoViewModel
+import android.net.Uri
+import android.provider.MediaStore
+import androidx.compose.foundation.Image
+import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -59,6 +66,11 @@ fun PantallaDetalleEvento(
             if (estado.cargando) CircularProgressIndicator() else Text(estado.mensaje ?: "")
         }
         return
+    }
+    //foto del lugar, si se tomo al publicar el evento. Igual que en CamaraFotoLugar
+    val context = LocalContext.current
+    val foto = remember(evento.fotoUri) {
+        evento.fotoUri?.let { MediaStore.Images.Media.getBitmap(context.contentResolver, Uri.parse(it)) }
     }
 
     Scaffold(
@@ -87,29 +99,36 @@ fun PantallaDetalleEvento(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Cabecera con degradado e icono del tipo
+            // Cabecera: foto del lugar, o degradado con el icono del tipo
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(170.dp)
                     .background(Brush.linearGradient(listOf(VioletaOscuro, TurquesaOscuro)))
             ) {
-                Icon(
-                    imageVector = iconoTipo(evento.tipo),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.25f),
-                    modifier = Modifier
-                        .size(120.dp)
-                        .align(Alignment.CenterEnd)
-                        .padding(end = 16.dp)
-                )
-                IconButton(
-                    onClick = onVolver,
-                    modifier = Modifier
-                        .padding(12.dp)
-                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.5f), CircleShape)
-                ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                if (foto != null) {
+                    Image(
+                        bitmap = foto.asImageBitmap(),
+                        contentDescription = "Foto del lugar",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                    Etiqueta(
+                        texto = "Foto del lugar",
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(12.dp)
+                    )
+                } else {
+                    Icon(
+                        imageVector = iconoTipo(evento.tipo),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.25f),
+                        modifier = Modifier
+                            .size(120.dp)
+                            .align(Alignment.CenterEnd)
+                            .padding(end = 16.dp)
+                    )
                 }
             }
 
