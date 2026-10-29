@@ -13,6 +13,12 @@ interface InscripcionDao {
     @Query("SELECT * FROM inscripciones WHERE usuarioId = :usuarioId")
     suspend fun getByUsuarioId(usuarioId: Int): List<Inscripcion>
 
+    @Query("SELECT COUNT(*) FROM inscripciones WHERE eventoId = :eventoId")
+    suspend fun contarPorEvento(eventoId: Int): Int
+
+    @Query("SELECT COUNT(*) > 0 FROM inscripciones WHERE eventoId = :eventoId AND usuarioId = :usuarioId")
+    suspend fun estaInscrito(eventoId: Int, usuarioId: Int): Boolean
+
     @Insert
     suspend fun insert(inscripcion: Inscripcion)
 

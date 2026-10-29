@@ -10,6 +10,10 @@ interface MensajeDao {
     @Query("SELECT * FROM mensajes WHERE grupoId = :grupoId ORDER BY hora ASC")
     suspend fun getByGrupoId(grupoId: Int): List<Mensaje>
 
+    // Ultimo mensaje del grupo, para la lista de chats
+    @Query("SELECT * FROM mensajes WHERE grupoId = :grupoId ORDER BY hora DESC LIMIT 1")
+    suspend fun obtenerUltimo(grupoId: Int): Mensaje?
+
     @Insert
     suspend fun insert(mensaje: Mensaje)
 
