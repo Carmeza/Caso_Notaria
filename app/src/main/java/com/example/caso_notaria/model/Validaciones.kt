@@ -6,20 +6,20 @@ object Validaciones {
 
     fun validarAlias(alias: String): String? = when {
         alias.isBlank() -> "El alias es obligatorio"
-        alias.length < 3 -> "Minimo 3 caracteres"
+        alias.length < 3 -> "Mínimo 3 caracteres"
         alias.contains(" ") -> "El alias no puede tener espacios"
         else -> null
     }
 
     fun validarCorreo(correo: String): String? = when {
         correo.isBlank() -> "El correo es obligatorio"
-        !correo.matches(Regex("^[\\w.-]+@[\\w.-]+\\.\\w+$")) -> "Correo invalido"
+        !correo.matches(Regex("^[\\w.-]+@[\\w.-]+\\.\\w+$")) -> "Ingresa un correo válido, por ejemplo nombre@correo.cl"
         else -> null
     }
 
     fun validarContrasena(contrasena: String): String? = when {
         contrasena.isBlank() -> "La contraseña es obligatoria"
-        contrasena.length < 8 -> "Minimo 8 caracteres"
+        contrasena.length < 8 -> "Debe tener al menos 8 caracteres"
         else -> null
     }
 

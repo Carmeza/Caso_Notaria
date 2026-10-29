@@ -34,7 +34,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "mygos_database"
                 )
                     .addCallback(AppDatabaseCallback())
-                    .fallbackToDestructiveMigration() // Evita que la app se cierre por cambios de esquema
+                    .fallbackToDestructiveMigration(dropAllTables = true) // si cambia el esquema, borra y vuelve a crear la base
                     .build()
                 INSTANCE = instance
                 instance
