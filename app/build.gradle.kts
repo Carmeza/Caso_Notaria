@@ -1,3 +1,11 @@
+import java.util.Properties
+
+// La clave de Google Maps se lee de local.properties
+val propiedadesLocales = Properties().apply {
+    val archivo = rootProject.file("local.properties")
+    if (archivo.exists()) archivo.inputStream().use { load(it) }
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -18,6 +26,8 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        manifestPlaceholders["MAPS_API_KEY"] = propiedadesLocales.getProperty("MAPS_API_KEY", "")
     }
 
     buildTypes {
@@ -69,4 +79,7 @@ dependencies {
 
     // Iconos
     implementation("androidx.compose.material:material-icons-extended")
+
+    // Mapa de Google en Compose
+    implementation("com.google.maps.android:maps-compose:7.0.0")
 }
