@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.collectLatest
 fun AppNavigation(viewModel: MainViewModel = viewModel()) {
     val navController = rememberNavController()
 
+    // Escucha eventos de navegación emitidos por MainViewModel
     LaunchedEffect(Unit) {
         viewModel.navigationEvents.collectLatest { event ->
             when (event) {
@@ -68,9 +69,8 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Bienvenida.route,
+            startDestination = Screen.Bienvenida.route, // Fuerza que la primera vista al dar RUN sea Bienvenida
             modifier = Modifier.padding(innerPadding),
-            // Transición uniforme: desliza desde la izquierda para todas las pantallas
             enterTransition = {
                 slideIntoContainer(
                     towards = AnimatedContentTransitionScope.SlideDirection.Left,
@@ -90,12 +90,15 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
                 fadeOut(animationSpec = tween(350))
             }
         ) {
+            // 1. Pantalla Inicial (RUN)
             composable(Screen.Bienvenida.route) {
                 PantallaBienvenida(
                     onIniciarSesion = { viewModel.navigateTo(Screen.IniciarSesion) },
                     onCrearCuenta = { viewModel.navigateTo(Screen.CrearCuenta) }
                 )
             }
+
+            // 2. Iniciar Sesión
             composable(Screen.IniciarSesion.route) {
                 PantallaIniciarSesion(
                     onLoginExitoso = { usuarioId ->
@@ -108,10 +111,11 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
                     onVolver = { viewModel.navigateBack() }
                 )
             }
+
+            // 3. Crear Cuenta
             composable(Screen.CrearCuenta.route) {
                 PantallaCrearCuenta(
                     onCuentaCreada = { nuevoUsuarioId ->
-                        // Guarda la ID en el ViewModel principal e inicia la sesión
                         viewModel.establecerUsuarioActual(nuevoUsuarioId)
                         viewModel.navigateTo(Screen.Eventos, popUpToRoute = Screen.Bienvenida, inclusive = true)
                     },
@@ -121,18 +125,24 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
                     onVolver = { viewModel.navigateBack() }
                 )
             }
+
+            // 4. Pantallas principales
             composable(Screen.Eventos.route) { PantallaTemporal("Eventos") }
+
             composable(Screen.Publicar.route) {
                 PantallaPublicarEvento(onEventoPublicado = {
                     viewModel.navigateTo(Screen.Eventos, popUpToRoute = Screen.Eventos, singleTop = true)
                 })
             }
+
             composable(Screen.Chats.route) { PantallaTemporal("Chats") }
+
             composable(Screen.Perfil.route) {
                 val usuarioIdActual by viewModel.usuarioActualId.collectAsState()
                 PantallaPerfil(
                     usuarioId = usuarioIdActual,
                     onCerrarSesion = {
+                        viewModel.establecerUsuarioActual(-1) // Limpia el usuario logueado
                         viewModel.navigateTo(
                             screen = Screen.Bienvenida,
                             popUpToRoute = Screen.Eventos,

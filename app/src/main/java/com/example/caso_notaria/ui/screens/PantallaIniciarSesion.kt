@@ -22,6 +22,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.caso_notaria.model.LoginForm
+import com.example.caso_notaria.model.LoginFormError
 import com.example.caso_notaria.ui.components.BotonPrincipal
 import com.example.caso_notaria.ui.components.CampoTexto
 import com.example.caso_notaria.ui.theme.Caso_notariaTheme
@@ -31,7 +33,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun PantallaIniciarSesion(
-    onLoginExitoso: (Int) -> Unit, // Recibe el ID del usuario consultado en Room
+    onLoginExitoso: (Int) -> Unit,
     onIrACrearCuenta: () -> Unit,
     onVolver: () -> Unit,
     viewModel: LoginViewModel = viewModel()
@@ -41,51 +43,77 @@ fun PantallaIniciarSesion(
     var cargando by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
+    PantallaIniciarSesionContent(
+        form = form,
+        errores = errores,
+        cargando = cargando,
+        onCorreoChange = viewModel::onCorreoChange,
+        onContrasenaChange = viewModel::onContrasenaChange,
+        onEntrarClick = {
+            if (viewModel.validarTodo()) {
+                scope.launch {
+                    cargando = true
+                    delay(1500)
+                    val usuarioId = viewModel.obtenerUsuarioIdPorCorreo()
+                    cargando = false
+                    onLoginExitoso(usuarioId)
+                }
+            }
+        },
+        onIrACrearCuenta = onIrACrearCuenta,
+        onVolver = onVolver
+    )
+}
+
+@Composable
+fun PantallaIniciarSesionContent(
+    form: LoginForm,
+    errores: LoginFormError,
+    cargando: Boolean,
+    onCorreoChange: (String) -> Unit,
+    onContrasenaChange: (String) -> Unit,
+    onEntrarClick: () -> Unit,
+    onIrACrearCuenta: () -> Unit,
+    onVolver: () -> Unit
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .background(MaterialTheme.colorScheme.background)
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            IconButton(onClick = onVolver) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Volver"
-                )
+            IconButton(onClick = onVolver, enabled = !cargando) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
             }
 
+            Spacer(modifier = Modifier.height(8.dp))
+
             Text(
-                text = "Iniciar sesión",
+                text = "Iniciar sesion",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "Ingresa tus datos para continuar",
+                text = "Ingresa con tu correo y contraseña",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Campo Correo conectado directamente al ViewModel
             CampoTexto(
                 valor = form.correo,
-                onCambio = viewModel::onCorreoChange,
+                onCambio = onCorreoChange,
                 etiqueta = "Correo",
                 error = errores.correo,
                 tipoTeclado = KeyboardType.Email
             )
 
-            // Campo Contraseña conectado directamente al ViewModel
             CampoTexto(
                 valor = form.contrasena,
-                onCambio = viewModel::onContrasenaChange,
+                onCambio = onContrasenaChange,
                 etiqueta = "Contraseña",
                 error = errores.contrasena,
                 esContrasena = true
@@ -93,48 +121,38 @@ fun PantallaIniciarSesion(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Botón de Entrar
             BotonPrincipal(
                 texto = "Entrar",
                 habilitado = !cargando,
-                onClick = {
-                    if (viewModel.validarTodo()) {
-                        scope.launch {
-                            cargando = true
-                            delay(1200) // Simulación de verificación
-                            val usuarioId = viewModel.obtenerUsuarioIdPorCorreo()
-                            cargando = false
-                            onLoginExitoso(usuarioId)
-                        }
-                    }
-                }
+                onClick = onEntrarClick
             )
 
             TextButton(
                 onClick = onIrACrearCuenta,
+                enabled = !cargando,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
-                Text(
-                    text = "¿No tienes cuenta? Regístrate aquí",
-                    color = MaterialTheme.colorScheme.secondary
-                )
+                Text("¿No tienes cuenta? Crear cuenta", color = MaterialTheme.colorScheme.secondary)
             }
         }
 
-        // Overlay con pantalla de carga centrada
         AnimatedVisibility(
             visible = cargando,
             enter = fadeIn(),
             exit = fadeOut(),
-            modifier = Modifier.align(Alignment.Center)
+            modifier = Modifier.fillMaxSize()
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background.copy(alpha = 0.7f)),
+                    .background(MaterialTheme.colorScheme.background.copy(alpha = 0.85f)),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                CircularProgressIndicator(
+                    modifier = Modifier.size(64.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    strokeWidth = 5.dp
+                )
             }
         }
     }
@@ -144,8 +162,13 @@ fun PantallaIniciarSesion(
 @Composable
 private fun PantallaIniciarSesionPreview() {
     Caso_notariaTheme {
-        PantallaIniciarSesion(
-            onLoginExitoso = {},
+        PantallaIniciarSesionContent(
+            form = LoginForm(correo = "ejemplo@correo.cl", contrasena = "123456"),
+            errores = LoginFormError(),
+            cargando = false,
+            onCorreoChange = {},
+            onContrasenaChange = {},
+            onEntrarClick = {},
             onIrACrearCuenta = {},
             onVolver = {}
         )

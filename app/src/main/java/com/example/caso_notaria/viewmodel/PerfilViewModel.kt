@@ -18,7 +18,7 @@ data class EventoInscritoUi(
 )
 
 data class PerfilUiState(
-    val iniciales: String = "KU",
+    val iniciales: String = "Cargando...",
     val usuario: String = "Cargando...",
     val categoria: String = "Intermedio",
     val torneosJugados: Int = 0,

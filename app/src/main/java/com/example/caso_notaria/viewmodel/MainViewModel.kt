@@ -17,7 +17,7 @@ class MainViewModel : ViewModel() {
     private val _navigationEvents = MutableSharedFlow<NavigationEvent>()
     val navigationEvents: SharedFlow<NavigationEvent> = _navigationEvents.asSharedFlow()
 
-    private val _usuarioActualId = MutableStateFlow(1)
+    private val _usuarioActualId = MutableStateFlow(-1)
     val usuarioActualId: StateFlow<Int> = _usuarioActualId.asStateFlow()
 
     fun establecerUsuarioActual(usuarioId: Int) {
