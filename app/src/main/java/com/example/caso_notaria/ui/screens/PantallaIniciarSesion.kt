@@ -5,9 +5,16 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,91 +25,67 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.caso_notaria.ui.components.BotonPrincipal
 import com.example.caso_notaria.ui.components.CampoTexto
 import com.example.caso_notaria.ui.theme.Caso_notariaTheme
-import com.example.caso_notaria.viewmodel.LoginFormState
-import com.example.caso_notaria.viewmodel.LoginErroresState
 import com.example.caso_notaria.viewmodel.LoginViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
 fun PantallaIniciarSesion(
-    onLoginExitoso: (Int) -> Unit,
+    onLoginExitoso: (Int) -> Unit, // Recibe el ID del usuario consultado en Room
     onIrACrearCuenta: () -> Unit,
     onVolver: () -> Unit,
     viewModel: LoginViewModel = viewModel()
 ) {
     val form by viewModel.form.collectAsState()
     val errores by viewModel.errores.collectAsState()
-    val scope = rememberCoroutineScope()
-
-    PantallaIniciarSesionContent(
-        form = form,
-        errores = errores,
-        onCorreoChange = viewModel::onCorreoChange,
-        onContrasenaChange = viewModel::onContrasenaChange,
-        onValidarYEntrar = {
-            if (viewModel.validarTodo()) {
-                scope.launch {
-                    val usuarioId = viewModel.obtenerUsuarioIdPorCorreo()
-                    onLoginExitoso(usuarioId)
-                }
-            }
-        },
-        onIrACrearCuenta = onIrACrearCuenta,
-        onVolver = onVolver
-    )
-}
-
-@Composable
-fun PantallaIniciarSesionContent(
-    form: LoginFormState,
-    errores: LoginErroresState,
-    onCorreoChange: (String) -> Unit,
-    onContrasenaChange: (String) -> Unit,
-    onValidarYEntrar: () -> Unit,
-    onIrACrearCuenta: () -> Unit,
-    onVolver: () -> Unit
-) {
     var cargando by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            IconButton(onClick = onVolver, enabled = !cargando) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+            IconButton(onClick = onVolver) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Volver"
+                )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
             Text(
-                text = "Iniciar sesion",
+                text = "Iniciar sesión",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "Ingresa con tu correo y contraseña",
+                text = "Ingresa tus datos para continuar",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Campo Correo conectado directamente al ViewModel
             CampoTexto(
                 valor = form.correo,
-                onCambio = onCorreoChange,
+                onCambio = viewModel::onCorreoChange,
                 etiqueta = "Correo",
                 error = errores.correo,
                 tipoTeclado = KeyboardType.Email
             )
+
+            // Campo Contraseña conectado directamente al ViewModel
             CampoTexto(
                 valor = form.contrasena,
-                onCambio = onContrasenaChange,
+                onCambio = viewModel::onContrasenaChange,
                 etiqueta = "Contraseña",
                 error = errores.contrasena,
                 esContrasena = true
@@ -110,45 +93,48 @@ fun PantallaIniciarSesionContent(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Botón de Entrar
             BotonPrincipal(
                 texto = "Entrar",
                 habilitado = !cargando,
                 onClick = {
-                    scope.launch {
-                        cargando = true
-                        delay(1200)
-                        cargando = false
-                        onValidarYEntrar()
+                    if (viewModel.validarTodo()) {
+                        scope.launch {
+                            cargando = true
+                            delay(1200) // Simulación de verificación
+                            val usuarioId = viewModel.obtenerUsuarioIdPorCorreo()
+                            cargando = false
+                            onLoginExitoso(usuarioId)
+                        }
                     }
                 }
             )
 
             TextButton(
                 onClick = onIrACrearCuenta,
-                enabled = !cargando,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
-                Text("¿No tienes cuenta? Crear cuenta", color = MaterialTheme.colorScheme.secondary)
+                Text(
+                    text = "¿No tienes cuenta? Regístrate aquí",
+                    color = MaterialTheme.colorScheme.secondary
+                )
             }
         }
 
+        // Overlay con pantalla de carga centrada
         AnimatedVisibility(
             visible = cargando,
             enter = fadeIn(),
             exit = fadeOut(),
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.align(Alignment.Center)
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background.copy(alpha = 0.85f)),
+                    .background(MaterialTheme.colorScheme.background.copy(alpha = 0.7f)),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(64.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    strokeWidth = 5.dp
-                )
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         }
     }
@@ -156,14 +142,10 @@ fun PantallaIniciarSesionContent(
 
 @Preview(showBackground = true)
 @Composable
-fun PantallaIniciarSesionPreview() {
+private fun PantallaIniciarSesionPreview() {
     Caso_notariaTheme {
-        PantallaIniciarSesionContent(
-            form = LoginFormState(correo = "kuma07@correo.cl"),
-            errores = LoginErroresState(),
-            onCorreoChange = {},
-            onContrasenaChange = {},
-            onValidarYEntrar = {},
+        PantallaIniciarSesion(
+            onLoginExitoso = {},
             onIrACrearCuenta = {},
             onVolver = {}
         )

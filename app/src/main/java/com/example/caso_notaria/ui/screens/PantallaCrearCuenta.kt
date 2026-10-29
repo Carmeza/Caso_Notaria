@@ -19,8 +19,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.caso_notaria.model.RegistroForm
-import com.example.caso_notaria.model.RegistroFormError
 import com.example.caso_notaria.ui.components.BotonPrincipal
 import com.example.caso_notaria.ui.components.CampoTexto
 import com.example.caso_notaria.ui.components.ChipCategoria
@@ -32,7 +30,7 @@ private val niveles = listOf("Casual", "Intermedio", "Competitivo")
 
 @Composable
 fun PantallaCrearCuenta(
-    onCuentaCreada: (Int) -> Unit, // Recibe el ID del nuevo usuario
+    onCuentaCreada: (Int) -> Unit,
     onIrAIniciarSesion: () -> Unit,
     onVolver: () -> Unit,
     viewModel: RegistroViewModel = viewModel()
@@ -43,48 +41,6 @@ fun PantallaCrearCuenta(
     var nuevoUsuarioId by remember { mutableIntStateOf(-1) }
     val scope = rememberCoroutineScope()
 
-    PantallaCrearCuentaContent(
-        form = form,
-        errores = errores,
-        onAliasChange = viewModel::onAliasChange,
-        onCorreoChange = viewModel::onCorreoChange,
-        onContrasenaChange = viewModel::onContrasenaChange,
-        onConfirmarContrasenaChange = viewModel::onConfirmarContrasenaChange,
-        onNivelChange = viewModel::onNivelChange,
-        onCrearCuentaClick = {
-            if (viewModel.validarTodo()) {
-                scope.launch {
-                    // Guarda el usuario en Room en segundo plano
-                    nuevoUsuarioId = viewModel.registrarUsuario()
-                    mostrarModal = true
-                }
-            }
-        },
-        onIrAIniciarSesion = onIrAIniciarSesion,
-        onVolver = onVolver,
-        mostrarModal = mostrarModal,
-        onDismissModal = {
-            mostrarModal = false
-            onCuentaCreada(nuevoUsuarioId)
-        }
-    )
-}
-
-@Composable
-fun PantallaCrearCuentaContent(
-    form: RegistroForm,
-    errores: RegistroFormError,
-    onAliasChange: (String) -> Unit,
-    onCorreoChange: (String) -> Unit,
-    onContrasenaChange: (String) -> Unit,
-    onConfirmarContrasenaChange: (String) -> Unit,
-    onNivelChange: (String) -> Unit,
-    onCrearCuentaClick: () -> Unit,
-    onIrAIniciarSesion: () -> Unit,
-    onVolver: () -> Unit,
-    mostrarModal: Boolean,
-    onDismissModal: () -> Unit
-) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -110,35 +66,36 @@ fun PantallaCrearCuentaContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Campos vinculados directamente a la instancia del ViewModel
         CampoTexto(
             valor = form.alias,
-            onCambio = onAliasChange,
+            onCambio = viewModel::onAliasChange,
             etiqueta = "Alias",
             error = errores.alias
         )
         CampoTexto(
             valor = form.correo,
-            onCambio = onCorreoChange,
+            onCambio = viewModel::onCorreoChange,
             etiqueta = "Correo",
             error = errores.correo,
             tipoTeclado = KeyboardType.Email
         )
         CampoTexto(
             valor = form.contrasena,
-            onCambio = onContrasenaChange,
+            onCambio = viewModel::onContrasenaChange,
             etiqueta = "Contraseña",
             error = errores.contrasena,
             esContrasena = true
         )
         CampoTexto(
             valor = form.confirmarContrasena,
-            onCambio = onConfirmarContrasenaChange,
+            onCambio = viewModel::onConfirmarContrasenaChange,
             etiqueta = "Repetir contraseña",
             error = errores.confirmarContrasena,
             esContrasena = true
         )
 
-        // Nivel
+        // Selección de Nivel directa en el ViewModel
         Text(
             text = "Nivel",
             style = MaterialTheme.typography.titleMedium,
@@ -149,7 +106,7 @@ fun PantallaCrearCuentaContent(
                 ChipCategoria(
                     texto = nivel,
                     seleccionado = form.nivel == nivel,
-                    onClick = { onNivelChange(nivel) }
+                    onClick = { viewModel.onNivelChange(nivel) }
                 )
             }
         }
@@ -159,9 +116,17 @@ fun PantallaCrearCuentaContent(
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // Botón principal
         BotonPrincipal(
             texto = "Crear cuenta",
-            onClick = onCrearCuentaClick
+            onClick = {
+                if (viewModel.validarTodo()) {
+                    scope.launch {
+                        nuevoUsuarioId = viewModel.registrarUsuario()
+                        mostrarModal = true
+                    }
+                }
+            }
         )
 
         TextButton(
@@ -171,14 +136,18 @@ fun PantallaCrearCuentaContent(
             Text("¿Ya tienes cuenta? Iniciar sesion", color = MaterialTheme.colorScheme.secondary)
         }
 
-        // Modal confirmación cuenta creada
+        // Modal de confirmación
         if (mostrarModal) {
+            val cerrarModal = {
+                mostrarModal = false
+                onCuentaCreada(nuevoUsuarioId)
+            }
             AlertDialog(
-                onDismissRequest = onDismissModal,
+                onDismissRequest = cerrarModal,
                 title = { Text("¡Cuenta creada!") },
                 text = { Text("Hola, ${form.alias}. Tu cuenta se creó correctamente.") },
                 confirmButton = {
-                    TextButton(onClick = onDismissModal) {
+                    TextButton(onClick = cerrarModal) {
                         Text("Continuar", color = MaterialTheme.colorScheme.secondary)
                     }
                 }
@@ -191,19 +160,10 @@ fun PantallaCrearCuentaContent(
 @Composable
 private fun PantallaCrearCuentaPreview() {
     Caso_notariaTheme {
-        PantallaCrearCuentaContent(
-            form = RegistroForm(alias = "UsuarioPrueba", correo = "prueba@correo.cl", nivel = "Intermedio"),
-            errores = RegistroFormError(),
-            onAliasChange = {},
-            onCorreoChange = {},
-            onContrasenaChange = {},
-            onConfirmarContrasenaChange = {},
-            onNivelChange = {},
-            onCrearCuentaClick = {},
+        PantallaCrearCuenta(
+            onCuentaCreada = {},
             onIrAIniciarSesion = {},
-            onVolver = {},
-            mostrarModal = false,
-            onDismissModal = {}
+            onVolver = {}
         )
     }
 }

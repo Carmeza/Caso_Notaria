@@ -3,6 +3,7 @@ package com.example.caso_notaria.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.example.caso_notaria.model.AppDatabase
+import com.example.caso_notaria.model.Validaciones
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,32 +31,39 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
     fun onCorreoChange(correo: String) {
         _form.value = _form.value.copy(correo = correo)
-        _errores.value = _errores.value.copy(correo = null)
+        _errores.value = _errores.value.copy(correo = Validaciones.validarCorreo(correo))
     }
 
     fun onContrasenaChange(contrasena: String) {
         _form.value = _form.value.copy(contrasena = contrasena)
-        _errores.value = _errores.value.copy(contrasena = null)
+        _errores.value = _errores.value.copy(contrasena = Validaciones.validarContrasena(contrasena))
     }
 
+    // Valida todos los campos y retorna true si no hay errores
     fun validarTodo(): Boolean {
-        var valido = true
-        var errCorreo: String? = null
-        var errContrasena: String? = null
-
-        if (_form.value.correo.isBlank()) {
-            errCorreo = "El correo es requerido"
-            valido = false
-        }
-        if (_form.value.contrasena.isBlank()) {
-            errContrasena = "La contraseña es requerida"
-            valido = false
+        val formulario = _form.value
+        val errCorreo = if (formulario.correo.isBlank()) {
+            "El correo es requerido"
+        } else {
+            Validaciones.validarCorreo(formulario.correo)
         }
 
-        _errores.value = LoginErroresState(correo = errCorreo, contrasena = errContrasena)
-        return valido
+        val errContrasena = if (formulario.contrasena.isBlank()) {
+            "La contraseña es requerida"
+        } else {
+            Validaciones.validarContrasena(formulario.contrasena)
+        }
+
+        val nuevosErrores = LoginErroresState(
+            correo = errCorreo,
+            contrasena = errContrasena
+        )
+        _errores.value = nuevosErrores
+
+        return nuevosErrores.correo == null && nuevosErrores.contrasena == null
     }
 
+    // Consulta en Room el ID del usuario que inicia sesión
     suspend fun obtenerUsuarioIdPorCorreo(): Int {
         val correoIngresado = _form.value.correo.trim()
         val usuarioEncontrado = usuarioDao.buscarPorCorreo(correoIngresado)
