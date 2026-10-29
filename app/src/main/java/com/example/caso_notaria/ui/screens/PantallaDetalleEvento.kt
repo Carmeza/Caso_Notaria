@@ -130,6 +130,15 @@ fun PantallaDetalleEvento(
                             .padding(end = 16.dp)
                     )
                 }
+                // Boton para volver
+                IconButton(
+                    onClick = onVolver,
+                    modifier = Modifier
+                        .padding(12.dp)
+                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.5f), CircleShape)
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+                }
             }
 
             Column(

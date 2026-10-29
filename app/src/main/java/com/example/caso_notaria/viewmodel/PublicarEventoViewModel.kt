@@ -119,7 +119,7 @@ class PublicarEventoViewModel(application: Application) : AndroidViewModel(appli
     }
 
     //guarda el evento en room con la foto y el usuario activo como organizador
-    //eventoRepository tasmbien le crea su grupo en el chat
+    //eventoRepository tambien le crea su grupo en el chat
     fun publicarEvento() {
         if (_uiState.value.publicando) return
         if (!validarFormulario()) return
@@ -142,6 +142,8 @@ class PublicarEventoViewModel(application: Application) : AndroidViewModel(appli
                     hora = estado.hora,
                     modalidad = estado.modalidad,
                     lugar = if (estado.modalidad == "Presencial") estado.lugar.trim() else "",
+                    latitud = if (estado.modalidad == "Presencial") estado.latitud else null,
+                    longitud = if (estado.modalidad == "Presencial") estado.longitud else null,
                     fotoUri = estado.fotoUri,
                     cupos = estado.cupos.toInt(),
                     descripcion = estado.descripcion.trim(),
