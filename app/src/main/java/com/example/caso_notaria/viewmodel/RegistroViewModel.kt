@@ -1,23 +1,32 @@
 package com.example.caso_notaria.viewmodel
 
-import android.content.Context
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.caso_notaria.model.AppDatabase
 import com.example.caso_notaria.model.RegistroForm
 import com.example.caso_notaria.model.RegistroFormError
 import com.example.caso_notaria.model.Usuario
 import com.example.caso_notaria.model.Validaciones
+import com.example.caso_notaria.repository.UsuarioRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
-class RegistroViewModel : ViewModel() {
+class RegistroViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val usuarioRepository = UsuarioRepository(AppDatabase.getDatabase(application).usuarioDao())
 
     private val _form = MutableStateFlow(RegistroForm())
     val form: StateFlow<RegistroForm> = _form.asStateFlow()
 
     private val _errores = MutableStateFlow(RegistroFormError())
     val errores: StateFlow<RegistroFormError> = _errores.asStateFlow()
+
+    private val _cargando = MutableStateFlow(false)
+    val cargando: StateFlow<Boolean> = _cargando.asStateFlow()
 
     fun onAliasChange(valor: String) {
         _form.value = _form.value.copy(alias = valor)
@@ -51,7 +60,7 @@ class RegistroViewModel : ViewModel() {
         _errores.value = _errores.value.copy(nivel = null)
     }
 
-    // Revisa todos los campos cuando apreta "Crear cuenta". Despues devuelve true si no hay errores
+    // Revisa todos los campos cuando apreta "Crear cuenta". Devuelve true si no hay errores
     fun validarTodo(): Boolean {
         val formulario = _form.value
         val nuevosErrores = RegistroFormError(
@@ -66,19 +75,27 @@ class RegistroViewModel : ViewModel() {
                 nuevosErrores.confirmarContrasena == null && nuevosErrores.nivel == null
     }
 
-    // Inserta el usuario en Room y retorna su ID generado utilizando el Context enviado desde Compose
-    suspend fun registrarUsuario(context: Context): Int {
-        val db = AppDatabase.getDatabase(context)
+    // Guarda la cuenta en Room con la sesion iniciada. Si el correo ya existe, lo marca como error
+    fun registrar(onExito: () -> Unit) {
+        if (!validarTodo()) return
         val formulario = _form.value
-        val nuevoUsuario = Usuario(
-            alias = formulario.alias.trim(),
-            correo = formulario.correo.trim(),
-            contrasena = formulario.contrasena,
-            nivel = formulario.nivel,
-            juegoPreferido = "Sin definir",
-            plataforma = "PC"
-        )
-        val idGenerado = db.usuarioDao().insert(nuevoUsuario)
-        return idGenerado.toInt()
+        viewModelScope.launch {
+            _cargando.value = true
+            delay(800) // espera breve para mostrar la carga
+            val nuevo = usuarioRepository.registrar(
+                Usuario(
+                    alias = formulario.alias.trim(),
+                    correo = formulario.correo,
+                    contrasena = formulario.contrasena,
+                    nivel = formulario.nivel
+                )
+            )
+            _cargando.value = false
+            if (nuevo == null) {
+                _errores.value = _errores.value.copy(correo = "Este correo ya está registrado")
+            } else {
+                onExito()
+            }
+        }
     }
 }
