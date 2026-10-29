@@ -12,4 +12,17 @@ sealed class Screen(val route: String) {
     data object Publicar : Screen("publicar")
     data object Chats : Screen("chats")
     data object Perfil : Screen("perfil")
+
+    // Rutas que llevan el id del evento. RUTA es el patron que usa el NavHost
+    data class DetalleEvento(val eventoId: Int) : Screen("detalle_evento/$eventoId") {
+        companion object {
+            const val RUTA = "detalle_evento/{eventoId}"
+        }
+    }
+
+    data class Participantes(val eventoId: Int) : Screen("participantes/$eventoId") {
+        companion object {
+            const val RUTA = "participantes/{eventoId}"
+        }
+    }
 }

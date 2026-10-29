@@ -9,19 +9,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.caso_notaria.ui.components.BarraInferior
 import com.example.caso_notaria.ui.components.pestanasInferiores
 import com.example.caso_notaria.ui.screens.PantallaBienvenida
 import com.example.caso_notaria.ui.screens.PantallaCrearCuenta
+import com.example.caso_notaria.ui.screens.PantallaDetalleEvento
+import com.example.caso_notaria.ui.screens.PantallaEventos
 import com.example.caso_notaria.ui.screens.PantallaIniciarSesion
+import com.example.caso_notaria.ui.screens.PantallaParticipantes
 import com.example.caso_notaria.ui.screens.PantallaPerfil
 import com.example.caso_notaria.ui.screens.PantallaPublicarEvento
 import com.example.caso_notaria.ui.screens.PantallaTemporal
@@ -32,7 +36,7 @@ import kotlinx.coroutines.flow.collectLatest
 fun AppNavigation(viewModel: MainViewModel = viewModel()) {
     val navController = rememberNavController()
 
-    // Escucha eventos de navegación emitidos por MainViewModel
+    // Escucha los eventos de navegacion que emite MainViewModel
     LaunchedEffect(Unit) {
         viewModel.navigationEvents.collectLatest { event ->
             when (event) {
@@ -69,7 +73,7 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Bienvenida.route, // Fuerza que la primera vista al dar RUN sea Bienvenida
+            startDestination = Screen.Bienvenida.route,
             modifier = Modifier.padding(innerPadding),
             enterTransition = {
                 slideIntoContainer(
@@ -90,19 +94,16 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
                 fadeOut(animationSpec = tween(350))
             }
         ) {
-            // 1. Pantalla Inicial (RUN)
+            // Acceso
             composable(Screen.Bienvenida.route) {
                 PantallaBienvenida(
                     onIniciarSesion = { viewModel.navigateTo(Screen.IniciarSesion) },
                     onCrearCuenta = { viewModel.navigateTo(Screen.CrearCuenta) }
                 )
             }
-
-            // 2. Iniciar Sesión
             composable(Screen.IniciarSesion.route) {
                 PantallaIniciarSesion(
-                    onLoginExitoso = { usuarioId ->
-                        viewModel.establecerUsuarioActual(usuarioId)
+                    onLoginExitoso = {
                         viewModel.navigateTo(Screen.Eventos, popUpToRoute = Screen.Bienvenida, inclusive = true)
                     },
                     onIrACrearCuenta = {
@@ -111,12 +112,9 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
                     onVolver = { viewModel.navigateBack() }
                 )
             }
-
-            // 3. Crear Cuenta
             composable(Screen.CrearCuenta.route) {
                 PantallaCrearCuenta(
-                    onCuentaCreada = { nuevoUsuarioId ->
-                        viewModel.establecerUsuarioActual(nuevoUsuarioId)
+                    onCuentaCreada = {
                         viewModel.navigateTo(Screen.Eventos, popUpToRoute = Screen.Bienvenida, inclusive = true)
                     },
                     onIrAIniciarSesion = {
@@ -126,23 +124,46 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
                 )
             }
 
-            // 4. Pantallas principales
-            composable(Screen.Eventos.route) { PantallaTemporal("Eventos") }
+            // Eventos, detalle y participantes
+            composable(Screen.Eventos.route) {
+                PantallaEventos(onEventoClick = { eventoId ->
+                    viewModel.navigateTo(Screen.DetalleEvento(eventoId))
+                })
+            }
+            composable(
+                route = Screen.DetalleEvento.RUTA,
+                arguments = listOf(navArgument("eventoId") { type = NavType.IntType })
+            ) { entrada ->
+                val eventoId = entrada.arguments?.getInt("eventoId") ?: 0
+                PantallaDetalleEvento(
+                    eventoId = eventoId,
+                    onVolver = { viewModel.navigateBack() },
+                    onVerParticipantes = { viewModel.navigateTo(Screen.Participantes(eventoId)) },
+                    // Va a la pestana de chats sin dejar el detalle en el historial
+                    onIrAlChat = { viewModel.navigateTo(Screen.Chats, popUpToRoute = Screen.Eventos, singleTop = true) }
+                )
+            }
+            composable(
+                route = Screen.Participantes.RUTA,
+                arguments = listOf(navArgument("eventoId") { type = NavType.IntType })
+            ) { entrada ->
+                PantallaParticipantes(
+                    eventoId = entrada.arguments?.getInt("eventoId") ?: 0,
+                    onVolver = { viewModel.navigateBack() }
+                )
+            }
 
+            // Resto de las pestanas
             composable(Screen.Publicar.route) {
                 PantallaPublicarEvento(onEventoPublicado = {
                     viewModel.navigateTo(Screen.Eventos, popUpToRoute = Screen.Eventos, singleTop = true)
                 })
             }
-
             composable(Screen.Chats.route) { PantallaTemporal("Chats") }
-
             composable(Screen.Perfil.route) {
-                val usuarioIdActual by viewModel.usuarioActualId.collectAsState()
                 PantallaPerfil(
-                    usuarioId = usuarioIdActual,
                     onCerrarSesion = {
-                        viewModel.establecerUsuarioActual(-1) // Limpia el usuario logueado
+                        // La sesion ya quedo cerrada en Room: vuelve a la bienvenida sin historial
                         viewModel.navigateTo(
                             screen = Screen.Bienvenida,
                             popUpToRoute = Screen.Eventos,
