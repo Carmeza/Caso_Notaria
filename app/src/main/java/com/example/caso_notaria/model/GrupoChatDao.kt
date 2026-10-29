@@ -10,6 +10,14 @@ interface GrupoChatDao {
     @Query("SELECT * FROM grupos_chat WHERE eventoId = :eventoId")
     suspend fun getByEventoId(eventoId: Int): List<GrupoChat>
 
+    // Grupos de los eventos donde el usuario esta inscrito o que organiza
+    @Query(
+        "SELECT grupos_chat.* FROM grupos_chat INNER JOIN inscripciones ON grupos_chat.eventoId = inscripciones.eventoId WHERE inscripciones.usuarioId = :usuarioId " +
+                "UNION " +
+                "SELECT grupos_chat.* FROM grupos_chat INNER JOIN eventos ON grupos_chat.eventoId = eventos.id WHERE eventos.organizadorId = :usuarioId"
+    )
+    suspend fun obtenerPorUsuario(usuarioId: Int): List<GrupoChat>
+
     @Insert
     suspend fun insert(grupoChat: GrupoChat)
 
