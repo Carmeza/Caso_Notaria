@@ -12,29 +12,31 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.caso_notaria.ui.components.BarraInferior
 import com.example.caso_notaria.ui.components.pestanasInferiores
 import com.example.caso_notaria.ui.screens.PantallaBienvenida
 import com.example.caso_notaria.ui.screens.PantallaCrearCuenta
+import com.example.caso_notaria.ui.screens.PantallaDetalleEvento
+import com.example.caso_notaria.ui.screens.PantallaEventos
 import com.example.caso_notaria.ui.screens.PantallaIniciarSesion
+import com.example.caso_notaria.ui.screens.PantallaParticipantes
+import com.example.caso_notaria.ui.screens.PantallaPerfil
 import com.example.caso_notaria.ui.screens.PantallaPublicarEvento
 import com.example.caso_notaria.ui.screens.PantallaTemporal
 import com.example.caso_notaria.viewmodel.MainViewModel
 import kotlinx.coroutines.flow.collectLatest
-import androidx.navigation.NavType
-import androidx.navigation.navArgument
-import com.example.caso_notaria.ui.screens.PantallaDetalleEvento
-import com.example.caso_notaria.ui.screens.PantallaEventos
-import com.example.caso_notaria.ui.screens.PantallaParticipantes
 
 @Composable
 fun AppNavigation(viewModel: MainViewModel = viewModel()) {
     val navController = rememberNavController()
 
+    // Escucha los eventos de navegacion que emite MainViewModel
     LaunchedEffect(Unit) {
         viewModel.navigationEvents.collectLatest { event ->
             when (event) {
@@ -73,7 +75,6 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
             navController = navController,
             startDestination = Screen.Bienvenida.route,
             modifier = Modifier.padding(innerPadding),
-            // Transición uniforme: desliza desde la izquierda para todas las pantallas
             enterTransition = {
                 slideIntoContainer(
                     towards = AnimatedContentTransitionScope.SlideDirection.Left,
@@ -93,6 +94,7 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
                 fadeOut(animationSpec = tween(350))
             }
         ) {
+            // Acceso
             composable(Screen.Bienvenida.route) {
                 PantallaBienvenida(
                     onIniciarSesion = { viewModel.navigateTo(Screen.IniciarSesion) },
@@ -121,6 +123,8 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
                     onVolver = { viewModel.navigateBack() }
                 )
             }
+
+            // Eventos, detalle y participantes
             composable(Screen.Eventos.route) {
                 PantallaEventos(onEventoClick = { eventoId ->
                     viewModel.navigateTo(Screen.DetalleEvento(eventoId))
@@ -148,13 +152,26 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
                     onVolver = { viewModel.navigateBack() }
                 )
             }
+
+            // Resto de las pestanas
             composable(Screen.Publicar.route) {
                 PantallaPublicarEvento(onEventoPublicado = {
                     viewModel.navigateTo(Screen.Eventos, popUpToRoute = Screen.Eventos, singleTop = true)
                 })
             }
             composable(Screen.Chats.route) { PantallaTemporal("Chats") }
-            composable(Screen.Perfil.route) { PantallaTemporal("Perfil") }
+            composable(Screen.Perfil.route) {
+                PantallaPerfil(
+                    onCerrarSesion = {
+                        // La sesion ya quedo cerrada en Room: vuelve a la bienvenida sin historial
+                        viewModel.navigateTo(
+                            screen = Screen.Bienvenida,
+                            popUpToRoute = Screen.Eventos,
+                            inclusive = true
+                        )
+                    }
+                )
+            }
         }
     }
 }

@@ -5,10 +5,19 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
@@ -17,8 +26,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.caso_notaria.ui.components.BotonPrincipal
 import com.example.caso_notaria.ui.components.CampoTexto
 import com.example.caso_notaria.viewmodel.LoginViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun PantallaIniciarSesion(
@@ -29,16 +36,16 @@ fun PantallaIniciarSesion(
 ) {
     val form by viewModel.form.collectAsState()
     val errores by viewModel.errores.collectAsState()
-
-    var cargando by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
+    val cargando by viewModel.cargando.collectAsState()
+    val errorLogin by viewModel.errorLogin.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .padding(24.dp),
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             IconButton(onClick = onVolver, enabled = !cargando) {
@@ -48,12 +55,12 @@ fun PantallaIniciarSesion(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Iniciar sesion",
+                text = "Hola de nuevo",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "Ingresa con tu correo y contraseña",
+                text = "Inicia sesión para ver tus eventos y los chats de tus torneos.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -67,6 +74,7 @@ fun PantallaIniciarSesion(
                 error = errores.correo,
                 tipoTeclado = KeyboardType.Email
             )
+
             CampoTexto(
                 valor = form.contrasena,
                 onCambio = viewModel::onContrasenaChange,
@@ -75,21 +83,17 @@ fun PantallaIniciarSesion(
                 esContrasena = true
             )
 
+            // Error cuando el correo o la contrasena no coinciden con una cuenta
+            errorLogin?.let {
+                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
 
             BotonPrincipal(
-                texto = "Entrar",
+                texto = "Iniciar sesión",
                 habilitado = !cargando,
-                onClick = {
-                    if (viewModel.validarTodo()) {
-                        scope.launch {
-                            cargando = true
-                            delay(1500) // Simulación de verificación/carga
-                            cargando = false
-                            onLoginExitoso()
-                        }
-                    }
-                }
+                onClick = { viewModel.iniciarSesion(onExito = onLoginExitoso) }
             )
 
             TextButton(
@@ -101,7 +105,7 @@ fun PantallaIniciarSesion(
             }
         }
 
-        // Overlay con pantalla de carga centrada
+        // Capa de carga mientras se revisa la cuenta
         AnimatedVisibility(
             visible = cargando,
             enter = fadeIn(),
