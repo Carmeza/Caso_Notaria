@@ -65,29 +65,59 @@ abstract class AppDatabase : RoomDatabase() {
                             dao.insert(usuario)
                         }
 
+                        // Los tipos y el formato de fecha deben ser los mismos que en publicar evento
                         val eventosIniciales = listOf(
-                            Evento(nombre = "Torneo Minecraft", tipo = "Competitivo", juego = "Minecraft", formato = "Equipos", plataforma = "PC", fecha = "2026-11-15", hora = "15:00", modalidad = "Online", lugar = "Servidor Privado", cupos = 50, descripcion = "Torneo de supervivencia", organizadorId = 1),
-                            Evento(nombre = "Free Fire Casual", tipo = "Amistoso", juego = "Free Fire", formato = "Solo", plataforma = "Consola", fecha = "2026-11-20", hora = "18:00", modalidad = "Online", lugar = "Lobby Público", cupos = 100, descripcion = "Partidas amistosas", organizadorId = 2)
+                            Evento(nombre = "Torneo Regional Smash", tipo = "Torneo", juego = "Super Smash Bros Ultimate", formato = "1v1", plataforma = "Consola", fecha = "Sáb 7 nov", hora = "15:00", modalidad = "Presencial", lugar = "Arcade Central", cupos = 64, descripcion = "Llega media hora antes para registrarte. Habrá zona de práctica libre y transmisión del cuadro final.", organizadorId = 7),
+                            Evento(nombre = "LAN Party Primavera", tipo = "LAN", juego = "Call of Duty Modern Warfare", formato = "5v5", plataforma = "PC", fecha = "Vie 13 nov", hora = "19:00", modalidad = "Presencial", lugar = "Club Gamer San Joaquín", cupos = 32, descripcion = "Trae tu equipo y audífonos. Hay mesas, enchufes y red cableada para todos.", organizadorId = 5),
+                            Evento(nombre = "Lanzamiento nueva temporada Free Fire", tipo = "Lanzamiento", juego = "Free Fire", formato = "Solo", plataforma = "Consola", fecha = "Mié 18 nov", hora = "18:30", modalidad = "Online", lugar = "", cupos = 100, descripcion = "Jugamos juntos las primeras partidas de la temporada y comentamos las novedades.", organizadorId = 2),
+                            Evento(nombre = "Quedada Minecraft", tipo = "Casual", juego = "Minecraft", formato = "Equipos", plataforma = "PC", fecha = "Dom 22 nov", hora = "16:00", modalidad = "Presencial", lugar = "Arcade Central", cupos = 20, descripcion = "Tarde tranquila para construir en equipo. No importa el nivel.", organizadorId = 3)
                         )
                         for (evento in eventosIniciales) eventoDao.insert(evento)
 
+                        // Un grupo de chat por evento
                         val chatsIniciales = listOf(
-                            GrupoChat(eventoId = 1, nombre = "Chat Torneo Minecraft"),
-                            GrupoChat(eventoId = 2, nombre = "Chat Free Fire Casual")
+                            GrupoChat(eventoId = 1, nombre = "Torneo Regional Smash"),
+                            GrupoChat(eventoId = 2, nombre = "LAN Party Primavera"),
+                            GrupoChat(eventoId = 3, nombre = "Lanzamiento nueva temporada Free Fire"),
+                            GrupoChat(eventoId = 4, nombre = "Quedada Minecraft")
                         )
                         for (chat in chatsIniciales) grupoChatDao.insert(chat)
 
+                        // kuma_07 (id 1) es la cuenta de demo: esta inscrita en 3 eventos.
+                        // El organizador no se inscribe en su propio evento
                         val inscripcionesIniciales = listOf(
                             Inscripcion(eventoId = 1, usuarioId = 1),
                             Inscripcion(eventoId = 1, usuarioId = 3),
-                            Inscripcion(eventoId = 2, usuarioId = 2)
+                            Inscripcion(eventoId = 1, usuarioId = 4),
+                            Inscripcion(eventoId = 1, usuarioId = 5),
+                            Inscripcion(eventoId = 1, usuarioId = 6),
+                            Inscripcion(eventoId = 2, usuarioId = 1),
+                            Inscripcion(eventoId = 2, usuarioId = 2),
+                            Inscripcion(eventoId = 2, usuarioId = 6),
+                            Inscripcion(eventoId = 2, usuarioId = 7),
+                            Inscripcion(eventoId = 3, usuarioId = 4),
+                            Inscripcion(eventoId = 3, usuarioId = 5),
+                            Inscripcion(eventoId = 3, usuarioId = 6),
+                            Inscripcion(eventoId = 4, usuarioId = 1),
+                            Inscripcion(eventoId = 4, usuarioId = 5),
+                            Inscripcion(eventoId = 4, usuarioId = 6),
+                            Inscripcion(eventoId = 4, usuarioId = 7)
                         )
                         for (inscripcion in inscripcionesIniciales) inscripcionDao.insert(inscripcion)
 
+                        // Cada mensaje tiene un minuto distinto para que salgan en orden
+                        val ahora = System.currentTimeMillis()
+                        val minuto = 60_000L
                         val mensajesIniciales = listOf(
-                            Mensaje(grupoId = 1, autorId = 1, texto = "¡Bienvenidos al torneo de Minecraft!"),
-                            Mensaje(grupoId = 1, autorId = 3, texto = "¿A qué hora empezamos exacto?"),
-                            Mensaje(grupoId = 2, autorId = 2, texto = "Agreguen para escuadra.")
+                            Mensaje(grupoId = 1, autorId = 3, texto = "¡Hola! ¿Quiénes van al torneo del sábado?", hora = ahora - 50 * minuto),
+                            Mensaje(grupoId = 1, autorId = 5, texto = "Yo voy, pero todavía no sé cómo llegar.", hora = ahora - 45 * minuto),
+                            Mensaje(grupoId = 1, autorId = 1, texto = "Yo también voy. ¿Nos juntamos en el metro?", hora = ahora - 40 * minuto),
+                            Mensaje(grupoId = 1, autorId = 3, texto = "Dale, llego 14:30 a la entrada.", hora = ahora - 35 * minuto),
+                            Mensaje(grupoId = 2, autorId = 6, texto = "¿Alguien lleva un switch de red extra?", hora = ahora - 30 * minuto),
+                            Mensaje(grupoId = 2, autorId = 2, texto = "Yo llevo uno, no se preocupen.", hora = ahora - 25 * minuto),
+                            Mensaje(grupoId = 3, autorId = 4, texto = "¿A qué hora se conectan?", hora = ahora - 20 * minuto),
+                            Mensaje(grupoId = 4, autorId = 7, texto = "¿Armamos equipos de tres?", hora = ahora - 15 * minuto),
+                            Mensaje(grupoId = 4, autorId = 1, texto = "Me sumo, prefiero construir.", hora = ahora - 10 * minuto)
                         )
                         for (mensaje in mensajesIniciales) mensajeDao.insert(mensaje)
                     }
