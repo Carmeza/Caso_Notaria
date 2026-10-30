@@ -32,8 +32,10 @@ data class PublicarEventoUiState(
     val hora: String = "",
     val modalidad: String = "Presencial",
     val lugar: String = "",
+    val latitud: Double? = null,
+    val longitud: Double? = null,
     val descripcion: String = "",
     val errores: PublicarEventoErrores = PublicarEventoErrores(),
-    val publicando: Boolean = false, //meintras se guarda el room
+    val publicando: Boolean = false, //mientras se guarda en room
     val publicado: Boolean = false
 )
