@@ -11,6 +11,9 @@ import com.example.caso_notaria.model.MensajeDao
 import com.example.caso_notaria.model.Usuario
 import com.example.caso_notaria.model.UsuarioDao
 
+// autorId de los mensajes automaticos del chat
+const val AUTOR_SISTEMA = 0
+
 // Eventos, inscripciones y participantes
 class EventoRepository(
     private val eventoDao: EventoDao,
@@ -40,17 +43,14 @@ class EventoRepository(
         if (inscripcionDao.contarPorEvento(eventoId) >= evento.cupos) return false
         inscripcionDao.insert(Inscripcion(eventoId = eventoId, usuarioId = usuarioId))
 
-        // Mensaje dinámico del sistema con el alias o correo real del usuario
+        // Aviso en el chat del evento. autorId 0 es mensaje del sistema
+        val grupo = grupoChatDao.obtenerPorEvento(eventoId)
         val usuario = usuarioDao.getById(usuarioId)
-        val alias = usuario?.alias ?: usuario?.correo ?: "Un usuario"
-        mensajeDao.insert(
-            Mensaje(
-                grupoId = eventoId,
-                autorId = 0,
-                texto = "$alias se unió al grupo del torneo",
-                hora = System.currentTimeMillis()
+        if (grupo != null && usuario != null) {
+            mensajeDao.insert(
+                Mensaje(grupoId = grupo.id, autorId = AUTOR_SISTEMA, texto = "${usuario.alias} se unió al grupo")
             )
-        )
+        }
 
         return true
     }
