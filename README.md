@@ -46,7 +46,7 @@ La primera vez que se abre la app se cargan usuarios, eventos, inscripciones y m
 
 - Carlos Meza
 - Felipe Yefi
-- Martin Veyr
+- Martin Veyl
 
 ## Organización
 
