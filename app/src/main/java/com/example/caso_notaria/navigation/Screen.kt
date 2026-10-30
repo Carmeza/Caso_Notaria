@@ -13,14 +13,17 @@ sealed class Screen(val route: String) {
     data object Chats : Screen("chats")
     data object Perfil : Screen("perfil")
 
-    object ChatDetalle : Screen("chat_detalle/{chatId}") {
-        fun createRoute(chatId: Int) = "chat_detalle/$chatId"
-    }
-
     // Rutas que llevan el id del evento. RUTA es el patron que usa el NavHost
     data class DetalleEvento(val eventoId: Int) : Screen("detalle_evento/$eventoId") {
         companion object {
             const val RUTA = "detalle_evento/{eventoId}"
+        }
+    }
+
+    // El chat se abre con el id del evento y cada evento tiene un grupo
+    data class ChatDetalle(val eventoId: Int) : Screen("chat_detalle/$eventoId") {
+        companion object {
+            const val RUTA = "chat_detalle/{eventoId}"
         }
     }
 
