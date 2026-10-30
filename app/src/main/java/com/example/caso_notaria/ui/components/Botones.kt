@@ -30,7 +30,7 @@ fun BotonPrincipal(
     habilitado: Boolean = true,
     cargando: Boolean = false
 ) {
-    // Detectamos la interacción del usuario
+    // Detecta cuando el boton esta presionado
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
@@ -70,7 +70,7 @@ fun BotonSecundario(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Detectamos la interacción del usuario
+    // Detecta cuando el boton esta presionado
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 

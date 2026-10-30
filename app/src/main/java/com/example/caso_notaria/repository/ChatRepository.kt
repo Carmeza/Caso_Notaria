@@ -24,8 +24,6 @@ class ChatRepository(
 
     suspend fun obtenerMensajes(grupoId: Int): List<Mensaje> = mensajeDao.getByGrupoId(grupoId)
 
-    suspend fun obtenerUltimoMensaje(grupoId: Int): Mensaje? = mensajeDao.obtenerUltimo(grupoId)
-
     // No guarda mensajes vacios
     suspend fun enviarMensaje(grupoId: Int, autorId: Int, texto: String) {
         if (texto.isBlank()) return
