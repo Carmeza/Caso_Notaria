@@ -40,7 +40,13 @@ class PerfilViewModel(application: Application) : AndroidViewModel(application) 
 
     private val db = AppDatabase.getDatabase(application)
     private val usuarioRepository = UsuarioRepository(db.usuarioDao())
-    private val eventoRepository = EventoRepository(db.eventoDao(), db.inscripcionDao(), db.grupoChatDao(), db.usuarioDao())
+    private val eventoRepository = EventoRepository(
+        db.eventoDao(),
+        db.inscripcionDao(),
+        db.grupoChatDao(),
+        db.usuarioDao(),
+        db.mensajeDao()
+    )
     private val chatRepository = ChatRepository(db.grupoChatDao(), db.mensajeDao())
 
     private val _uiState = MutableStateFlow(PerfilUiState())

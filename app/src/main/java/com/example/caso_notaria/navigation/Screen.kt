@@ -20,6 +20,13 @@ sealed class Screen(val route: String) {
         }
     }
 
+    // El chat se abre con el id del evento y cada evento tiene un grupo
+    data class ChatDetalle(val eventoId: Int) : Screen("chat_detalle/$eventoId") {
+        companion object {
+            const val RUTA = "chat_detalle/{eventoId}"
+        }
+    }
+
     data class Participantes(val eventoId: Int) : Screen("participantes/$eventoId") {
         companion object {
             const val RUTA = "participantes/{eventoId}"
