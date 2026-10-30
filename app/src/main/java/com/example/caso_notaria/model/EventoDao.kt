@@ -17,8 +17,8 @@ interface EventoDao {
     @Query("SELECT * FROM eventos WHERE organizadorId = :usuarioId")
     suspend fun obtenerOrganizadosPorUsuario(usuarioId: Int): List<Evento>
 
-    // Devuelve el id del evento nuevo. Se le agrega el manejo de conflictos
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    // Devuelve el id del evento nuevo
+    @Insert
     suspend fun insert(evento: Evento): Long
 
     @Update

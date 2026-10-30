@@ -28,13 +28,11 @@ import com.example.caso_notaria.ui.components.AvatarIniciales
 import com.example.caso_notaria.ui.components.Etiqueta
 import com.example.caso_notaria.viewmodel.EventoInscritoUi
 import com.example.caso_notaria.viewmodel.PerfilViewModel
-import com.example.caso_notaria.viewmodel.ChatsViewModel
 
 @Composable
 fun PantallaPerfil(
     onCerrarSesion: () -> Unit,
-    viewModel: PerfilViewModel = viewModel(),
-    chatsViewModel: ChatsViewModel = viewModel()
+    viewModel: PerfilViewModel = viewModel()
 ) {
     val estado by viewModel.uiState.collectAsState()
 
@@ -139,12 +137,7 @@ fun PantallaPerfil(
             title = { Text("¿Cerrar sesión?") },
             text = { Text("Vas a volver a la bienvenida. Tus inscripciones y chats se mantienen.") },
             confirmButton = {
-                TextButton(onClick = {
-                    viewModel.cerrarSesion(onListo = {
-                        chatsViewModel.limpiarChats()
-                        onCerrarSesion()
-                    })
-                }) {
+                TextButton(onClick = { viewModel.cerrarSesion(onListo = onCerrarSesion) }) {
                     Text("Cerrar sesión", color = MaterialTheme.colorScheme.error)
                 }
             },

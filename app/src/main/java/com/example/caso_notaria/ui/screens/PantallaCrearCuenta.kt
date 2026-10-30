@@ -22,7 +22,6 @@ import com.example.caso_notaria.ui.components.BotonPrincipal
 import com.example.caso_notaria.ui.components.CampoTexto
 import com.example.caso_notaria.ui.components.ChipCategoria
 import com.example.caso_notaria.viewmodel.RegistroViewModel
-import com.example.caso_notaria.viewmodel.ChatsViewModel
 
 private val niveles = listOf("Casual", "Intermedio", "Competitivo")
 
@@ -31,8 +30,7 @@ fun PantallaCrearCuenta(
     onCuentaCreada: () -> Unit,
     onIrAIniciarSesion: () -> Unit,
     onVolver: () -> Unit,
-    viewModel: RegistroViewModel = viewModel(),
-    chatsViewModel: ChatsViewModel = viewModel()
+    viewModel: RegistroViewModel = viewModel()
 ) {
     val form by viewModel.form.collectAsState()
     val errores by viewModel.errores.collectAsState()
@@ -122,12 +120,7 @@ fun PantallaCrearCuenta(
             BotonPrincipal(
                 texto = "Crear cuenta",
                 habilitado = !cargando,
-                onClick = {
-                    viewModel.registrar(onExito = {
-                        chatsViewModel.limpiarChats()
-                        onCuentaCreada()
-                    })
-                }
+                onClick = { viewModel.registrar(onExito = onCuentaCreada) }
             )
 
             TextButton(

@@ -44,7 +44,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import com.example.caso_notaria.viewmodel.ChatsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -53,8 +52,7 @@ fun PantallaDetalleEvento(
     onVolver: () -> Unit,
     onVerParticipantes: () -> Unit,
     onIrAlChat: () -> Unit,
-    viewModel: DetalleEventoViewModel = viewModel(),
-    chatsViewModel: ChatsViewModel = viewModel()
+    viewModel: DetalleEventoViewModel = viewModel()
 ) {
     val estado by viewModel.uiState.collectAsState()
 
@@ -91,14 +89,7 @@ fun PantallaDetalleEvento(
                 habilitado = !estado.esOrganizador && !estado.estaInscrito && estado.cuposLibres > 0,
                 cargando = estado.inscribiendo,
                 mensaje = estado.mensaje,
-                onInscribirse = {
-                    viewModel.inscribirse()
-                    chatsViewModel.crearChatVacio(
-                        torneoId = eventoId,
-                        nombreTorneo = evento.nombre,
-                        fecha = "${evento.fecha} · ${evento.hora}"
-                    )
-                }
+                onInscribirse = viewModel::inscribirse
             )
         }
     ) { padding ->
