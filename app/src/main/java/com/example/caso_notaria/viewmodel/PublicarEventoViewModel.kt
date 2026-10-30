@@ -19,7 +19,13 @@ import java.util.TimeZone
 class PublicarEventoViewModel(application: Application) : AndroidViewModel(application) {
     private val db by lazy { AppDatabase.getDatabase(getApplication<Application>()) }
     private val eventoRepository by lazy {
-        EventoRepository(db.eventoDao(), db.inscripcionDao(), db.grupoChatDao(), db.usuarioDao())
+        EventoRepository(
+            db.eventoDao(),
+            db.inscripcionDao(),
+            db.grupoChatDao(),
+            db.usuarioDao(),
+            db.mensajeDao()
+        )
     }
     private val usuarioRepository by lazy { UsuarioRepository(db.usuarioDao()) }
     private val _uiState = MutableStateFlow(PublicarEventoUiState())

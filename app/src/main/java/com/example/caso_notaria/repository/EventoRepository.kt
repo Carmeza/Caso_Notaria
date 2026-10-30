@@ -6,6 +6,8 @@ import com.example.caso_notaria.model.GrupoChat
 import com.example.caso_notaria.model.GrupoChatDao
 import com.example.caso_notaria.model.Inscripcion
 import com.example.caso_notaria.model.InscripcionDao
+import com.example.caso_notaria.model.Mensaje
+import com.example.caso_notaria.model.MensajeDao
 import com.example.caso_notaria.model.Usuario
 import com.example.caso_notaria.model.UsuarioDao
 
@@ -14,7 +16,8 @@ class EventoRepository(
     private val eventoDao: EventoDao,
     private val inscripcionDao: InscripcionDao,
     private val grupoChatDao: GrupoChatDao,
-    private val usuarioDao: UsuarioDao
+    private val usuarioDao: UsuarioDao,
+    private val mensajeDao: MensajeDao
 ) {
 
     suspend fun obtenerEventos(): List<Evento> = eventoDao.getAll()
@@ -36,6 +39,19 @@ class EventoRepository(
         if (inscripcionDao.estaInscrito(eventoId, usuarioId)) return false
         if (inscripcionDao.contarPorEvento(eventoId) >= evento.cupos) return false
         inscripcionDao.insert(Inscripcion(eventoId = eventoId, usuarioId = usuarioId))
+
+        // Mensaje dinámico del sistema con el alias o correo real del usuario
+        val usuario = usuarioDao.getById(usuarioId)
+        val alias = usuario?.alias ?: usuario?.correo ?: "Un usuario"
+        mensajeDao.insert(
+            Mensaje(
+                grupoId = eventoId,
+                autorId = 0,
+                texto = "$alias se unió al grupo del torneo",
+                hora = System.currentTimeMillis()
+            )
+        )
+
         return true
     }
 

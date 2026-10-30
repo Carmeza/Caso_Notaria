@@ -21,6 +21,8 @@ import androidx.navigation.navArgument
 import com.example.caso_notaria.ui.components.BarraInferior
 import com.example.caso_notaria.ui.components.pestanasInferiores
 import com.example.caso_notaria.ui.screens.PantallaBienvenida
+import com.example.caso_notaria.ui.screens.PantallaChatDetalle
+import com.example.caso_notaria.ui.screens.PantallaChats
 import com.example.caso_notaria.ui.screens.PantallaCrearCuenta
 import com.example.caso_notaria.ui.screens.PantallaDetalleEvento
 import com.example.caso_notaria.ui.screens.PantallaEventos
@@ -29,12 +31,16 @@ import com.example.caso_notaria.ui.screens.PantallaParticipantes
 import com.example.caso_notaria.ui.screens.PantallaPerfil
 import com.example.caso_notaria.ui.screens.PantallaPublicarEvento
 import com.example.caso_notaria.ui.screens.PantallaTemporal
+import com.example.caso_notaria.viewmodel.ChatsViewModel
 import com.example.caso_notaria.viewmodel.MainViewModel
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun AppNavigation(viewModel: MainViewModel = viewModel()) {
     val navController = rememberNavController()
+
+    // AQUÍ ESTÁ EL CAMBIO PRINCIPAL: Se instancia un único ChatsViewModel para toda la app
+    val chatsViewModel: ChatsViewModel = viewModel()
 
     // Escucha los eventos de navegacion que emite MainViewModel
     LaunchedEffect(Unit) {
@@ -94,6 +100,34 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
                 fadeOut(animationSpec = tween(350))
             }
         ) {
+            composable(Screen.Chats.route) {
+                PantallaChats(
+                    onChatClick = { chatId ->
+                        navController.navigate(Screen.ChatDetalle.createRoute(chatId))
+                    },
+                    viewModel = chatsViewModel // Pasamos el ViewModel compartido
+                )
+            }
+
+            // --- MODIFICACIÓN EN ESTA RUTA ---
+            composable(
+                route = Screen.ChatDetalle.route,
+                arguments = listOf(navArgument("chatId") { type = NavType.IntType })
+            ) { backStackEntry ->
+                val chatId = backStackEntry.arguments?.getInt("chatId") ?: 0
+
+                // TODO: Obtén el ID real del usuario que inició sesión.
+                // Si lo tienes en MainViewModel, podría ser algo como: viewModel.usuarioIdActual
+                val usuarioIdActual = 1 // <- REEMPLAZA ESTE NÚMERO POR TU VARIABLE DE SESIÓN REAL
+
+                PantallaChatDetalle(
+                    chatId = chatId,
+                    usuarioId = usuarioIdActual, // Pasamos el parámetro aquí
+                    onVolver = { navController.navigateUp() }
+                )
+            }
+            // ---------------------------------
+
             // Acceso
             composable(Screen.Bienvenida.route) {
                 PantallaBienvenida(
@@ -109,7 +143,8 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
                     onIrACrearCuenta = {
                         viewModel.navigateTo(Screen.CrearCuenta, popUpToRoute = Screen.Bienvenida)
                     },
-                    onVolver = { viewModel.navigateBack() }
+                    onVolver = { viewModel.navigateBack() },
+                    chatsViewModel = chatsViewModel // Pasamos el ViewModel compartido para que cargue los datos
                 )
             }
             composable(Screen.CrearCuenta.route) {
@@ -139,8 +174,9 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
                     eventoId = eventoId,
                     onVolver = { viewModel.navigateBack() },
                     onVerParticipantes = { viewModel.navigateTo(Screen.Participantes(eventoId)) },
-                    // Va a la pestana de chats sin dejar el detalle en el historial
-                    onIrAlChat = { viewModel.navigateTo(Screen.Chats, popUpToRoute = Screen.Eventos, singleTop = true) }
+                    onIrAlChat = {
+                        navController.navigate(Screen.ChatDetalle.createRoute(eventoId))
+                    }
                 )
             }
             composable(
@@ -159,11 +195,11 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
                     viewModel.navigateTo(Screen.Eventos, popUpToRoute = Screen.Eventos, singleTop = true)
                 })
             }
-            composable(Screen.Chats.route) { PantallaTemporal("Chats") }
+
             composable(Screen.Perfil.route) {
                 PantallaPerfil(
                     onCerrarSesion = {
-                        // La sesion ya quedo cerrada en Room: vuelve a la bienvenida sin historial
+                        chatsViewModel.limpiarChats() // Limpiamos los chats al cerrar sesión
                         viewModel.navigateTo(
                             screen = Screen.Bienvenida,
                             popUpToRoute = Screen.Eventos,

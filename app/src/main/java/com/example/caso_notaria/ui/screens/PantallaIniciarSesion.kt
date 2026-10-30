@@ -26,13 +26,15 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.caso_notaria.ui.components.BotonPrincipal
 import com.example.caso_notaria.ui.components.CampoTexto
 import com.example.caso_notaria.viewmodel.LoginViewModel
+import com.example.caso_notaria.viewmodel.ChatsViewModel
 
 @Composable
 fun PantallaIniciarSesion(
     onLoginExitoso: () -> Unit,
     onIrACrearCuenta: () -> Unit,
     onVolver: () -> Unit,
-    viewModel: LoginViewModel = viewModel()
+    viewModel: LoginViewModel = viewModel(),
+    chatsViewModel: ChatsViewModel = viewModel()
 ) {
     val form by viewModel.form.collectAsState()
     val errores by viewModel.errores.collectAsState()
@@ -93,7 +95,14 @@ fun PantallaIniciarSesion(
             BotonPrincipal(
                 texto = "Iniciar sesión",
                 habilitado = !cargando,
-                onClick = { viewModel.iniciarSesion(onExito = onLoginExitoso) }
+                onClick = {
+                    viewModel.iniciarSesion(onExito = {
+                        // AQUÍ ESTÁ LO NUEVO: Se le pasa el ID del usuario al ViewModel de chats.
+                        // (Asegúrate de que "usuarioIdActual" coincida con el nombre que usas en tu LoginViewModel para guardar el ID)
+                        chatsViewModel.cargarChatsRegistrados(viewModel.usuarioIdActual)
+                        onLoginExitoso()
+                    })
+                }
             )
 
             TextButton(

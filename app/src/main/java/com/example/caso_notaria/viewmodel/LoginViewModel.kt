@@ -31,6 +31,9 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
     private val _errorLogin = MutableStateFlow<String?>(null)
     val errorLogin: StateFlow<String?> = _errorLogin.asStateFlow()
 
+    // AQUÍ ESTÁ LO NUEVO: Variable para guardar el ID del usuario que inicia sesión
+    var usuarioIdActual: Int = 0
+
     fun onCorreoChange(valor: String) {
         _form.value = _form.value.copy(correo = valor)
         _errores.value = _errores.value.copy(correo = Validaciones.validarCorreo(valor))
@@ -65,6 +68,8 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
             if (usuario == null) {
                 _errorLogin.value = "Correo o contraseña incorrectos"
             } else {
+                // AQUÍ ESTÁ LO NUEVO: Guardamos el ID del usuario antes de avisar que fue un éxito
+                usuarioIdActual = usuario.id
                 onExito()
             }
         }
