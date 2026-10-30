@@ -4,86 +4,67 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.caso_notaria.model.AppDatabase
+import com.example.caso_notaria.repository.ChatRepository
+import com.example.caso_notaria.repository.UsuarioRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+// Un grupo como se muestra en la lista de chats
 data class ChatPreview(
-    val id: Int,
+    val eventoId: Int,
     val titulo: String,
     val ultimoMensaje: String,
-    val emisorUltimoMensaje: String,
     val hora: String,
-    val mensajesSinLeer: Int,
     val integrantes: Int,
     val fechaEvento: String
 )
 
-// Usamos AndroidViewModel para que reciba el application y no rompa tus pantallas
+// Estado de la lista de chats
+data class ChatsUiState(
+    val cargando: Boolean = true,
+    val chats: List<ChatPreview> = emptyList()
+)
+
 class ChatsViewModel(application: Application) : AndroidViewModel(application) {
 
-    // Conexión directa a tu base de datos Room
-    private val dao = AppDatabase.getDatabase(application).grupoChatDao()
+    private val db = AppDatabase.getDatabase(application)
+    private val chatRepository = ChatRepository(db.grupoChatDao(), db.mensajeDao())
+    private val usuarioRepository = UsuarioRepository(db.usuarioDao())
 
-    private val _chats = MutableStateFlow<List<ChatPreview>>(emptyList())
-    val chats: StateFlow<List<ChatPreview>> = _chats.asStateFlow()
+    private val _uiState = MutableStateFlow(ChatsUiState())
+    val uiState: StateFlow<ChatsUiState> = _uiState.asStateFlow()
 
-    // Solo le pasas el ID del usuario que inicia sesión
-    fun cargarChatsRegistrados(usuarioId: Int) {
+    // Carga los grupos del usuario con la sesion iniciada
+    fun cargarChats() {
         viewModelScope.launch {
-            try {
-                val chatsBd = dao.obtenerChatsDeUsuario(usuarioId)
-                _chats.value = chatsBd.map { chat ->
+            val usuario = usuarioRepository.obtenerUsuarioActivo()
+            val chats = if (usuario == null) emptyList() else {
+                chatRepository.obtenerChatsDelUsuario(usuario.id).map { chat ->
                     ChatPreview(
-                        id = chat.id,
+                        eventoId = chat.eventoId,
                         titulo = chat.titulo,
-                        ultimoMensaje = chat.ultimoMensaje ?: "Sin mensajes aún",
-                        emisorUltimoMensaje = chat.emisorUltimoMensaje ?: "",
-                        hora = formatearHora(chat.horaMs),
-                        mensajesSinLeer = 0,
+                        ultimoMensaje = when {
+                            chat.ultimoMensaje == null -> "Sin mensajes aún"
+                            chat.emisorUltimoMensaje == null -> chat.ultimoMensaje
+                            else -> "${chat.emisorUltimoMensaje}: ${chat.ultimoMensaje}"
+                        },
+                        hora = chat.horaMs?.let { formatearHora(it) } ?: "",
                         integrantes = chat.integrantes,
                         fechaEvento = chat.fechaEvento
                     )
                 }
-            } catch (e: Exception) {
-                _chats.value = emptyList()
             }
+            _uiState.update { it.copy(cargando = false, chats = chats) }
         }
-    }
-
-    fun limpiarChats() {
-        _chats.value = emptyList()
-    }
-
-    fun marcarComoLeido(chatId: Int) {
-        _chats.value = _chats.value.map { chat ->
-            if (chat.id == chatId) chat.copy(mensajesSinLeer = 0) else chat
-        }
-    }
-
-    fun crearChatVacio(torneoId: Int, nombreTorneo: String, fecha: String) {
-        if (_chats.value.none { it.id == torneoId }) {
-            val nuevoChat = ChatPreview(
-                id = torneoId,
-                titulo = nombreTorneo,
-                ultimoMensaje = "",
-                emisorUltimoMensaje = "",
-                hora = "Ahora",
-                mensajesSinLeer = 0,
-                integrantes = 1,
-                fechaEvento = fecha
-            )
-            _chats.value = listOf(nuevoChat) + _chats.value
-        }
-    }
-
-    private fun formatearHora(horaMs: Long?): String {
-        if (horaMs == null) return ""
-        val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
-        return sdf.format(Date(horaMs))
     }
 }
+
+// Convierte los milisegundos en "HH:mm"
+fun formatearHora(horaMs: Long): String =
+    SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(horaMs))
