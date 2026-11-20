@@ -1,11 +1,7 @@
 package com.example.caso_notaria.model
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-
-@Entity(tableName = "eventos")
 data class Evento(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val id: Int = 0,
     val nombre: String,
     val tipo: String,
     val juego: String,
@@ -20,5 +16,6 @@ data class Evento(
     val fotoUri: String? = null,
     val cupos: Int,
     val descripcion: String,
-    val organizadorId: Int
+    val organizadorId: Int,
+    val organizadorAlias: String = "" // lo manda Xano en el detalle del evento
 )
