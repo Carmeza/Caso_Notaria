@@ -3,10 +3,13 @@ package com.example.caso_notaria.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.caso_notaria.model.AppDatabase
 import com.example.caso_notaria.model.LoginForm
 import com.example.caso_notaria.model.LoginFormError
 import com.example.caso_notaria.model.Validaciones
+import com.example.caso_notaria.network.RetrofitClient
+import com.example.caso_notaria.network.llamarApi
+import com.example.caso_notaria.network.mensajeDeError
+import com.example.caso_notaria.repository.SesionManager
 import com.example.caso_notaria.repository.UsuarioRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +19,8 @@ import kotlinx.coroutines.launch
 
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val usuarioRepository = UsuarioRepository(AppDatabase.getDatabase(application).usuarioDao())
+    private val sesion = SesionManager(application)
+    private val usuarioRepository = UsuarioRepository(RetrofitClient.getApi(sesion), sesion)
 
     private val _form = MutableStateFlow(LoginForm())
     val form: StateFlow<LoginForm> = _form.asStateFlow()
@@ -54,19 +58,19 @@ class LoginViewModel(application: Application) : AndroidViewModel(application) {
         return nuevosErrores.correo == null && nuevosErrores.contrasena == null
     }
 
-    // Busca el usuario en Room y deja su sesion activa. Solo llama a onExito si los datos son correctos
+    // Pide el token a Xano y deja la sesion guardada. Solo llama a onExito si los datos son correctos
     fun iniciarSesion(onExito: () -> Unit) {
         if (!validarTodo()) return
         viewModelScope.launch {
             _cargando.value = true
-            delay(800) // espera breve para mostrar la carga
-            val usuario = usuarioRepository.iniciarSesion(_form.value.correo, _form.value.contrasena)
+            delay(800)
+            val resultado = llamarApi { usuarioRepository.iniciarSesion(_form.value.correo, _form.value.contrasena) }
             _cargando.value = false
-            if (usuario == null) {
-                _errorLogin.value = "Correo o contraseña incorrectos"
-            } else {
-                onExito()
-            }
+            resultado
+                .onSuccess { usuario ->
+                    if (usuario == null) _errorLogin.value = "Correo o contraseña incorrectos" else onExito()
+                }
+                .onFailure { error -> _errorLogin.value = mensajeDeError(error) }
         }
     }
 }

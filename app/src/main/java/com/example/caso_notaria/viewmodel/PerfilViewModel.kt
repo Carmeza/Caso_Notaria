@@ -3,10 +3,13 @@ package com.example.caso_notaria.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.caso_notaria.model.AppDatabase
-import com.example.caso_notaria.repository.ChatRepository
+import com.example.caso_notaria.network.RetrofitClient
+import com.example.caso_notaria.network.llamarApi
 import com.example.caso_notaria.repository.EventoRepository
+import com.example.caso_notaria.repository.SesionManager
 import com.example.caso_notaria.repository.UsuarioRepository
+import com.example.caso_notaria.repository.eventosDelUsuario
+import com.example.caso_notaria.repository.eventosInscritos
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,21 +41,14 @@ data class PerfilUiState(
 
 class PerfilViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val db = AppDatabase.getDatabase(application)
-    private val usuarioRepository = UsuarioRepository(db.usuarioDao())
-    private val eventoRepository = EventoRepository(
-        db.eventoDao(),
-        db.inscripcionDao(),
-        db.grupoChatDao(),
-        db.usuarioDao(),
-        db.mensajeDao()
-    )
-    private val chatRepository = ChatRepository(db.grupoChatDao(), db.mensajeDao())
+    private val sesion = SesionManager(application)
+    private val usuarioRepository = UsuarioRepository(RetrofitClient.getApi(sesion), sesion)
+    private val eventoRepository = EventoRepository(RetrofitClient.getApi(sesion))
 
     private val _uiState = MutableStateFlow(PerfilUiState())
     val uiState: StateFlow<PerfilUiState> = _uiState.asStateFlow()
 
-    // Carga los datos del usuario con la sesion iniciada
+    // Los datos del usuario vienen de la sesion guardada y los eventos de Xano
     fun cargarPerfil() {
         viewModelScope.launch {
             val usuario = usuarioRepository.obtenerUsuarioActivo()
@@ -60,29 +56,39 @@ class PerfilViewModel(application: Application) : AndroidViewModel(application) 
                 _uiState.update { it.copy(cargando = false) }
                 return@launch
             }
-            val inscritos = eventoRepository.obtenerEventosInscritos(usuario.id).map { evento ->
-                // La fecha viene como "Sáb 7 nov". se separa el dia y el mes
-                val partes = evento.fecha.split(" ")
-                EventoInscritoUi(
-                    id = evento.id,
-                    dia = partes.getOrNull(1) ?: "",
-                    mes = partes.getOrNull(2)?.uppercase() ?: "",
-                    titulo = evento.nombre,
-                    detalle = "${evento.hora} · ${if (evento.modalidad == "Online") "Online" else evento.lugar}"
-                )
-            }
             _uiState.update {
                 it.copy(
-                    cargando = false,
                     alias = usuario.alias,
                     nivel = usuario.nivel,
                     correo = usuario.correo,
                     juegoPreferido = usuario.juegoPreferido.ifBlank { "Sin definir" },
-                    plataforma = usuario.plataforma.ifBlank { "Sin definir" },
-                    eventosInscritos = inscritos,
-                    eventosOrganizados = eventoRepository.obtenerEventosOrganizados(usuario.id).size,
-                    chats = chatRepository.obtenerGruposDelUsuario(usuario.id).size
+                    plataforma = usuario.plataforma.ifBlank { "Sin definir" }
                 )
+            }
+            llamarApi {
+                eventoRepository.obtenerEventos() to eventoRepository.obtenerInscripciones()
+            }.onSuccess { (eventos, inscripciones) ->
+                val inscritos = eventosInscritos(eventos, inscripciones, usuario.id).map { evento ->
+                    // La fecha viene como "Sáb 7 nov". se separa el dia y el mes
+                    val partes = evento.fecha.split(" ")
+                    EventoInscritoUi(
+                        id = evento.id,
+                        dia = partes.getOrNull(1) ?: "",
+                        mes = partes.getOrNull(2)?.uppercase() ?: "",
+                        titulo = evento.nombre,
+                        detalle = "${evento.hora} · ${if (evento.modalidad == "Online") "Online" else evento.lugar}"
+                    )
+                }
+                _uiState.update {
+                    it.copy(
+                        cargando = false,
+                        eventosInscritos = inscritos,
+                        eventosOrganizados = eventos.count { evento -> evento.organizadorId == usuario.id },
+                        chats = eventosDelUsuario(eventos, inscripciones, usuario.id).size
+                    )
+                }
+            }.onFailure {
+                _uiState.update { it.copy(cargando = false) }
             }
         }
     }
@@ -95,12 +101,10 @@ class PerfilViewModel(application: Application) : AndroidViewModel(application) 
         _uiState.update { it.copy(mostrarConfirmacionCierre = false) }
     }
 
-    // Deja la sesion cerrada en Room y despues avisa a la pantalla
+    // Borra el token del telefono y despues avisa a la pantalla
     fun cerrarSesion(onListo: () -> Unit) {
-        viewModelScope.launch {
-            usuarioRepository.cerrarSesion()
-            _uiState.update { it.copy(mostrarConfirmacionCierre = false) }
-            onListo()
-        }
+        usuarioRepository.cerrarSesion()
+        _uiState.update { it.copy(mostrarConfirmacionCierre = false) }
+        onListo()
     }
 }

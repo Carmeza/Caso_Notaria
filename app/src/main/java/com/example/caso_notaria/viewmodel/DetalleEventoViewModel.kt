@@ -3,10 +3,13 @@ package com.example.caso_notaria.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.caso_notaria.model.AppDatabase
 import com.example.caso_notaria.model.Evento
 import com.example.caso_notaria.model.Usuario
+import com.example.caso_notaria.network.RetrofitClient
+import com.example.caso_notaria.network.llamarApi
+import com.example.caso_notaria.network.mensajeDeError
 import com.example.caso_notaria.repository.EventoRepository
+import com.example.caso_notaria.repository.SesionManager
 import com.example.caso_notaria.repository.UsuarioRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,60 +37,68 @@ data class DetalleEventoUiState(
 
 class DetalleEventoViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val db = AppDatabase.getDatabase(application)
-    private val eventoRepository = EventoRepository(
-        db.eventoDao(),
-        db.inscripcionDao(),
-        db.grupoChatDao(),
-        db.usuarioDao(),
-        db.mensajeDao()
-    )
-    private val usuarioRepository = UsuarioRepository(db.usuarioDao())
+    private val sesion = SesionManager(application)
+    private val eventoRepository = EventoRepository(RetrofitClient.getApi(sesion))
+    private val usuarioRepository = UsuarioRepository(RetrofitClient.getApi(sesion), sesion)
 
     private val _uiState = MutableStateFlow(DetalleEventoUiState())
     val uiState: StateFlow<DetalleEventoUiState> = _uiState.asStateFlow()
 
+    // Pide el evento y sus participantes. Con los participantes se sabe si el usuario ya esta inscrito
     fun cargar(eventoId: Int) {
         viewModelScope.launch {
-            val evento = eventoRepository.obtenerEvento(eventoId)
+            val usuario = usuarioRepository.obtenerUsuarioActivo()
+            val resultado = llamarApi {
+                val evento = eventoRepository.obtenerEvento(eventoId)
+                val participantes = if (evento == null) emptyList() else eventoRepository.obtenerParticipantes(eventoId)
+                evento to participantes
+            }
+            resultado.onFailure { error ->
+                _uiState.update { it.copy(cargando = false, mensaje = mensajeDeError(error)) }
+                return@launch
+            }
+            val (evento, participantes) = resultado.getOrThrow()
             if (evento == null) {
                 _uiState.update { it.copy(cargando = false, mensaje = "No encontramos este evento") }
                 return@launch
             }
-            val usuario = usuarioRepository.obtenerUsuarioActivo()
-            val organizador = usuarioRepository.obtenerUsuario(evento.organizadorId)
             _uiState.update {
                 it.copy(
                     cargando = false,
                     evento = evento,
-                    organizador = organizador?.alias ?: "Organizador",
+                    organizador = evento.organizadorAlias.ifBlank { "Organizador" },
                     usuarioId = usuario?.id,
-                    estaInscrito = usuario != null && eventoRepository.estaInscrito(eventoId, usuario.id)
+                    estaInscrito = participantes.any { participante -> participante.id == usuario?.id },
+                    participantes = participantes,
+                    inscritos = participantes.size
                 )
             }
-            actualizarParticipantes(eventoId)
         }
     }
 
-    // Muestra la carga, inscribe con el repositorio y abre la confirmacion
+    // Muestra la carga, pide la inscripcion a Xano y abre la confirmacion
     fun inscribirse() {
         val estado = _uiState.value
         val evento = estado.evento ?: return
-        val usuarioId = estado.usuarioId
-        if (usuarioId == null) {
+        if (estado.usuarioId == null) {
             _uiState.update { it.copy(mensaje = "Inicia sesión para inscribirte") }
             return
         }
         viewModelScope.launch {
             _uiState.update { it.copy(inscribiendo = true, mensaje = null) }
-            delay(800) // espera breve para mostrar la carga en el boton
-            val inscrito = eventoRepository.inscribirse(evento.id, usuarioId)
-            if (inscrito) {
-                actualizarParticipantes(evento.id)
-                _uiState.update { it.copy(inscribiendo = false, estaInscrito = true, mostrarConfirmacion = true) }
-            } else {
-                _uiState.update { it.copy(inscribiendo = false, mensaje = "No quedan cupos en este evento") }
-            }
+            delay(800)
+            llamarApi { eventoRepository.inscribirse(evento.id) }
+                .onSuccess { motivo ->
+                    if (motivo == null) {
+                        actualizarParticipantes(evento.id)
+                        _uiState.update { it.copy(inscribiendo = false, estaInscrito = true, mostrarConfirmacion = true) }
+                    } else {
+                        _uiState.update { it.copy(inscribiendo = false, mensaje = motivo) }
+                    }
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(inscribiendo = false, mensaje = mensajeDeError(error)) }
+                }
         }
     }
 
@@ -96,7 +107,8 @@ class DetalleEventoViewModel(application: Application) : AndroidViewModel(applic
     }
 
     private suspend fun actualizarParticipantes(eventoId: Int) {
-        val participantes = eventoRepository.obtenerParticipantes(eventoId)
-        _uiState.update { it.copy(participantes = participantes, inscritos = participantes.size) }
+        llamarApi { eventoRepository.obtenerParticipantes(eventoId) }.onSuccess { participantes ->
+            _uiState.update { it.copy(participantes = participantes, inscritos = participantes.size) }
+        }
     }
 }

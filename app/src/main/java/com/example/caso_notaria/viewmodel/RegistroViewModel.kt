@@ -3,7 +3,10 @@ package com.example.caso_notaria.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.caso_notaria.model.AppDatabase
+import com.example.caso_notaria.network.RetrofitClient
+import com.example.caso_notaria.network.llamarApi
+import com.example.caso_notaria.network.mensajeDeError
+import com.example.caso_notaria.repository.SesionManager
 import com.example.caso_notaria.model.RegistroForm
 import com.example.caso_notaria.model.RegistroFormError
 import com.example.caso_notaria.model.Usuario
@@ -17,8 +20,8 @@ import kotlinx.coroutines.launch
 
 class RegistroViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val usuarioRepository = UsuarioRepository(AppDatabase.getDatabase(application).usuarioDao())
-
+    private val sesion = SesionManager(application)
+    private val usuarioRepository = UsuarioRepository(RetrofitClient.getApi(sesion), sesion)
     private val _form = MutableStateFlow(RegistroForm())
     val form: StateFlow<RegistroForm> = _form.asStateFlow()
 
@@ -27,6 +30,10 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
 
     private val _cargando = MutableStateFlow(false)
     val cargando: StateFlow<Boolean> = _cargando.asStateFlow()
+
+    // Aviso cuando no se pudo conectar con Xano
+    private val _errorRegistro = MutableStateFlow<String?>(null)
+    val errorRegistro: StateFlow<String?> = _errorRegistro.asStateFlow()
 
     fun onAliasChange(valor: String) {
         _form.value = _form.value.copy(alias = valor)
@@ -75,27 +82,30 @@ class RegistroViewModel(application: Application) : AndroidViewModel(application
                 nuevosErrores.confirmarContrasena == null && nuevosErrores.nivel == null
     }
 
-    // Guarda la cuenta en Room con la sesion iniciada. Si el correo ya existe, lo marca como error
+    // Crea la cuenta en Xano con la sesion iniciada. Si el correo ya existe, lo marca como error
     fun registrar(onExito: () -> Unit) {
         if (!validarTodo()) return
         val formulario = _form.value
         viewModelScope.launch {
             _cargando.value = true
-            delay(800) // espera breve para mostrar la carga
-            val nuevo = usuarioRepository.registrar(
-                Usuario(
-                    alias = formulario.alias.trim(),
-                    correo = formulario.correo,
-                    contrasena = formulario.contrasena,
-                    nivel = formulario.nivel
+            _errorRegistro.value = null
+            delay(800)
+            val resultado = llamarApi {
+                usuarioRepository.registrar(
+                    Usuario(alias = formulario.alias.trim(), correo = formulario.correo, nivel = formulario.nivel),
+                    formulario.contrasena
                 )
-            )
-            _cargando.value = false
-            if (nuevo == null) {
-                _errores.value = _errores.value.copy(correo = "Este correo ya está registrado")
-            } else {
-                onExito()
             }
+            _cargando.value = false
+            resultado
+                .onSuccess { nuevo ->
+                    if (nuevo == null) {
+                        _errores.value = _errores.value.copy(correo = "Este correo ya está registrado")
+                    } else {
+                        onExito()
+                    }
+                }
+                .onFailure { error -> _errorRegistro.value = mensajeDeError(error) }
         }
     }
 }

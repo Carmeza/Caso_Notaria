@@ -3,7 +3,10 @@ package com.example.caso_notaria.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.caso_notaria.model.AppDatabase
+import com.example.caso_notaria.network.RetrofitClient
+import com.example.caso_notaria.network.llamarApi
+import com.example.caso_notaria.network.mensajeDeError
+import com.example.caso_notaria.repository.SesionManager
 import com.example.caso_notaria.model.Evento
 import com.example.caso_notaria.repository.EventoRepository
 import com.example.caso_notaria.repository.UsuarioRepository
@@ -17,17 +20,9 @@ import java.util.Calendar
 import java.util.TimeZone
 
 class PublicarEventoViewModel(application: Application) : AndroidViewModel(application) {
-    private val db by lazy { AppDatabase.getDatabase(getApplication<Application>()) }
-    private val eventoRepository by lazy {
-        EventoRepository(
-            db.eventoDao(),
-            db.inscripcionDao(),
-            db.grupoChatDao(),
-            db.usuarioDao(),
-            db.mensajeDao()
-        )
-    }
-    private val usuarioRepository by lazy { UsuarioRepository(db.usuarioDao()) }
+    private val sesion by lazy { SesionManager(getApplication<Application>()) }
+    private val eventoRepository by lazy { EventoRepository(RetrofitClient.getApi(sesion)) }
+    private val usuarioRepository by lazy { UsuarioRepository(RetrofitClient.getApi(sesion), sesion) }
     private val _uiState = MutableStateFlow(PublicarEventoUiState())
     val uiState: StateFlow<PublicarEventoUiState> = _uiState.asStateFlow()
 
@@ -129,39 +124,38 @@ class PublicarEventoViewModel(application: Application) : AndroidViewModel(appli
         return !errores.hayErrores()
     }
 
-    //guarda el evento en room con la foto y el usuario activo como organizador
-    //eventoRepository tambien le crea su grupo en el chat
+    //envia el evento a Xano con la foto. Xano pone al usuario del token como organizador
     fun publicarEvento() {
         if (_uiState.value.publicando) return
         if (!validarFormulario()) return
         val estado = _uiState.value
         viewModelScope.launch {
-            _uiState.update { it.copy(publicando = true) }
+            _uiState.update { it.copy(publicando = true, errorEnvio = null) }
             val usuario = usuarioRepository.obtenerUsuarioActivo()
             if (usuario == null) {
                 _uiState.update { it.copy(publicando = false) }
                 return@launch
             }
-            eventoRepository.publicarEvento(
-                Evento(
-                    nombre = estado.nombre.trim(),
-                    tipo = estado.tipo,
-                    juego = estado.juego.trim(),
-                    formato = estado.formato.trim(),
-                    plataforma = estado.plataforma,
-                    fecha = estado.fechaTexto,
-                    hora = estado.hora,
-                    modalidad = estado.modalidad,
-                    lugar = if (estado.modalidad == "Presencial") estado.lugar.trim() else "",
-                    latitud = if (estado.modalidad == "Presencial") estado.latitud else null,
-                    longitud = if (estado.modalidad == "Presencial") estado.longitud else null,
-                    fotoUri = estado.fotoUri,
-                    cupos = estado.cupos.toInt(),
-                    descripcion = estado.descripcion.trim(),
-                    organizadorId = usuario.id
-                )
+            val evento = Evento(
+                nombre = estado.nombre.trim(),
+                tipo = estado.tipo,
+                juego = estado.juego.trim(),
+                formato = estado.formato.trim(),
+                plataforma = estado.plataforma,
+                fecha = estado.fechaTexto,
+                hora = estado.hora,
+                modalidad = estado.modalidad,
+                lugar = if (estado.modalidad == "Presencial") estado.lugar.trim() else "",
+                latitud = if (estado.modalidad == "Presencial") estado.latitud else null,
+                longitud = if (estado.modalidad == "Presencial") estado.longitud else null,
+                fotoUri = estado.fotoUri,
+                cupos = estado.cupos.toInt(),
+                descripcion = estado.descripcion.trim(),
+                organizadorId = usuario.id
             )
-            _uiState.update { it.copy(publicando = false, publicado = true) }
+            llamarApi { eventoRepository.publicarEvento(evento) }
+                .onSuccess { _uiState.update { it.copy(publicando = false, publicado = true) } }
+                .onFailure { error -> _uiState.update { it.copy(publicando = false, errorEnvio = mensajeDeError(error)) } }
         }
     }
     // Se llama al cerrar el aviso de evento publicado

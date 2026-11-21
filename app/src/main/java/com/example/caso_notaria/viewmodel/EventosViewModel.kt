@@ -3,10 +3,14 @@ package com.example.caso_notaria.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.caso_notaria.model.AppDatabase
 import com.example.caso_notaria.model.Evento
+import com.example.caso_notaria.network.RetrofitClient
+import com.example.caso_notaria.network.llamarApi
+import com.example.caso_notaria.network.mensajeDeError
 import com.example.caso_notaria.repository.EventoRepository
+import com.example.caso_notaria.repository.SesionManager
 import com.example.caso_notaria.repository.UsuarioRepository
+import com.example.caso_notaria.repository.contarInscritosPorEvento
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,20 +28,15 @@ data class EventosUiState(
     val eventos: List<EventoConInscritos> = emptyList(),
     val eventosFiltrados: List<EventoConInscritos> = emptyList(),
     val busqueda: String = "",
-    val tipoSeleccionado: String = "Todos"
+    val tipoSeleccionado: String = "Todos",
+    val error: String? = null
 )
 
 class EventosViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val db = AppDatabase.getDatabase(application)
-    private val eventoRepository = EventoRepository(
-        db.eventoDao(),
-        db.inscripcionDao(),
-        db.grupoChatDao(),
-        db.usuarioDao(),
-        db.mensajeDao()
-    )
-    private val usuarioRepository = UsuarioRepository(db.usuarioDao())
+    private val sesion = SesionManager(application)
+    private val eventoRepository = EventoRepository(RetrofitClient.getApi(sesion))
+    private val usuarioRepository = UsuarioRepository(RetrofitClient.getApi(sesion), sesion)
 
     private val _uiState = MutableStateFlow(EventosUiState())
     val uiState: StateFlow<EventosUiState> = _uiState.asStateFlow()
@@ -46,16 +45,23 @@ class EventosViewModel(application: Application) : AndroidViewModel(application)
     fun cargarEventos() {
         viewModelScope.launch {
             val usuario = usuarioRepository.obtenerUsuarioActivo()
-            val lista = eventoRepository.obtenerEventos().map { evento ->
-                EventoConInscritos(evento, eventoRepository.contarInscritos(evento.id))
-            }
-            _uiState.update {
-                it.copy(
-                    cargando = false,
-                    aliasUsuario = usuario?.alias ?: "",
-                    eventos = lista,
-                    eventosFiltrados = filtrar(lista, it.busqueda, it.tipoSeleccionado)
-                )
+            llamarApi {
+                val inscritos = contarInscritosPorEvento(eventoRepository.obtenerInscripciones())
+                eventoRepository.obtenerEventos().map { evento ->
+                    EventoConInscritos(evento, inscritos[evento.id] ?: 0)
+                }
+            }.onSuccess { lista ->
+                _uiState.update {
+                    it.copy(
+                        cargando = false,
+                        error = null,
+                        aliasUsuario = usuario?.alias ?: "",
+                        eventos = lista,
+                        eventosFiltrados = filtrar(lista, it.busqueda, it.tipoSeleccionado)
+                    )
+                }
+            }.onFailure { error ->
+                _uiState.update { it.copy(cargando = false, error = mensajeDeError(error)) }
             }
         }
     }

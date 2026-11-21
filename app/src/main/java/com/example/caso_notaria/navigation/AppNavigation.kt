@@ -181,7 +181,7 @@ fun AppNavigation(viewModel: MainViewModel = viewModel()) {
             composable(Screen.Perfil.route) {
                 PantallaPerfil(
                     onCerrarSesion = {
-                        // La sesion ya quedo cerrada en Room y vuelve a la bienvenida sin historial
+                        // La sesion ya quedo cerrada en el telefono y vuelve a la bienvenida sin historial
                         viewModel.navigateTo(
                             screen = Screen.Bienvenida,
                             popUpToRoute = Screen.Eventos,

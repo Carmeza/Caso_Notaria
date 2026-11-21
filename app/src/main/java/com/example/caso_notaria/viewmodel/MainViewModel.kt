@@ -3,7 +3,8 @@ package com.example.caso_notaria.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.caso_notaria.model.AppDatabase
+import com.example.caso_notaria.network.RetrofitClient
+import com.example.caso_notaria.repository.SesionManager
 import com.example.caso_notaria.navigation.NavigationEvent
 import com.example.caso_notaria.navigation.Screen
 import com.example.caso_notaria.repository.UsuarioRepository
@@ -17,8 +18,8 @@ import kotlinx.coroutines.launch
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val usuarioRepository = UsuarioRepository(AppDatabase.getDatabase(application).usuarioDao())
-
+    private val sesion = SesionManager(application)
+    private val usuarioRepository = UsuarioRepository(RetrofitClient.getApi(sesion), sesion)
     private val _navigationEvents = MutableSharedFlow<NavigationEvent>()
 
     val navigationEvents: SharedFlow<NavigationEvent> = _navigationEvents.asSharedFlow()
@@ -28,7 +29,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val rutaInicial: StateFlow<String?> = _rutaInicial.asStateFlow()
 
     init {
-        // Si quedo un usuario con sesion activa en Room, entra directo a eventos
+        // Si quedo un token guardado en el telefono, entra directo a eventos.
         viewModelScope.launch {
             val usuario = usuarioRepository.obtenerUsuarioActivo()
             _rutaInicial.value = if (usuario != null) Screen.Eventos.route else Screen.Bienvenida.route
