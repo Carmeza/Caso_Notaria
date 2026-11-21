@@ -36,6 +36,7 @@ data class PublicarEventoUiState(
     val longitud: Double? = null,
     val descripcion: String = "",
     val errores: PublicarEventoErrores = PublicarEventoErrores(),
-    val publicando: Boolean = false, //mientras se guarda en room
+    val publicando: Boolean = false, //mientras se envia a Xano
+    val errorEnvio: String? = null, //aviso si no se pudo publicar
     val publicado: Boolean = false
 )

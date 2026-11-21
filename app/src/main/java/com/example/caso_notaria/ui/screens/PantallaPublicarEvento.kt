@@ -199,6 +199,8 @@ fun PantallaPublicarEvento(
             modifier = Modifier.align(Alignment.End)
         )
 
+        TextoError(estado.errorEnvio)
+
         BotonPrincipal(
             texto = "Publicar evento",
             cargando = estado.publicando,
