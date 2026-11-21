@@ -37,8 +37,11 @@ fun CamaraFotoLugar(
 
     //convierte la foto en imagen para mostrarla
     //solo se vuelve a calcular cuando cambia fotoUri
+    // si la foto no se puede leer, no se muestra en vez de cerrar la app
     val bitmap = remember(fotoUri) {
-        fotoUri?.let { MediaStore.Images.Media.getBitmap(context.contentResolver, Uri.parse(it)) }
+        fotoUri?.let { uri ->
+            runCatching { MediaStore.Images.Media.getBitmap(context.contentResolver, Uri.parse(uri)) }.getOrNull()
+        }
     }
     //Launcher de la camara
     val takePictureLauncher = rememberLauncherForActivityResult(

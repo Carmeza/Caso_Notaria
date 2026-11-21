@@ -69,9 +69,12 @@ fun PantallaDetalleEvento(
         return
     }
     //foto del lugar, si se tomo al publicar el evento. Igual que en CamaraFotoLugar
+    //la foto queda guardada solo en el telefono que la tomo: si no existe aqui, no se muestra
     val context = LocalContext.current
     val foto = remember(evento.fotoUri) {
-        evento.fotoUri?.let { MediaStore.Images.Media.getBitmap(context.contentResolver, Uri.parse(it)) }
+        evento.fotoUri?.let { uri ->
+            runCatching { MediaStore.Images.Media.getBitmap(context.contentResolver, Uri.parse(uri)) }.getOrNull()
+        }
     }
 
     Scaffold(
