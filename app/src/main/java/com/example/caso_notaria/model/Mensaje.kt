@@ -1,13 +1,11 @@
 package com.example.caso_notaria.model
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-
-@Entity(tableName = "mensajes")
+// Mensaje del chat de un evento. autorAlias es null en los mensajes del sistema
 data class Mensaje(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val grupoId: Int,
+    val id: Int = 0,
+    val eventoId: Int,
     val autorId: Int,
+    val autorAlias: String? = null,
     val texto: String,
     val hora: Long = System.currentTimeMillis()
 )

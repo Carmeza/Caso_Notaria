@@ -106,7 +106,7 @@ fun PantallaEventos(
             }
             estado.eventosFiltrados.isEmpty() -> {
                 Text(
-                    text = "No hay eventos que coincidan con tu búsqueda",
+                    text = estado.error ?: "No hay eventos que coincidan con tu búsqueda",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

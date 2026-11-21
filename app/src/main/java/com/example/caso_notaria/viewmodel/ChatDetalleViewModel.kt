@@ -3,9 +3,12 @@ package com.example.caso_notaria.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.caso_notaria.model.AppDatabase
+import com.example.caso_notaria.network.RetrofitClient
+import com.example.caso_notaria.network.llamarApi
 import com.example.caso_notaria.repository.AUTOR_SISTEMA
 import com.example.caso_notaria.repository.ChatRepository
+import com.example.caso_notaria.repository.EventoRepository
+import com.example.caso_notaria.repository.SesionManager
 import com.example.caso_notaria.repository.UsuarioRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,23 +35,25 @@ data class ChatDetalleUiState(
 
 class ChatDetalleViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val db = AppDatabase.getDatabase(application)
-    private val chatRepository = ChatRepository(db.grupoChatDao(), db.mensajeDao())
-    private val usuarioRepository = UsuarioRepository(db.usuarioDao())
+    private val sesion = SesionManager(application)
+    private val chatRepository = ChatRepository(RetrofitClient.getApi(sesion))
+    private val eventoRepository = EventoRepository(RetrofitClient.getApi(sesion))
+    private val usuarioRepository = UsuarioRepository(RetrofitClient.getApi(sesion), sesion)
 
     private val _uiState = MutableStateFlow(ChatDetalleUiState())
     val uiState: StateFlow<ChatDetalleUiState> = _uiState.asStateFlow()
 
-    private var grupoId: Int? = null
+    private var eventoId: Int? = null
     private var usuarioId: Int? = null
 
-    // Busca el grupo del evento y carga sus mensajes guardados
+    // El titulo del chat es el nombre del evento
     fun cargar(eventoId: Int) {
+        this.eventoId = eventoId
+        usuarioId = usuarioRepository.obtenerUsuarioActivo()?.id
         viewModelScope.launch {
-            usuarioId = usuarioRepository.obtenerUsuarioActivo()?.id
-            val grupo = chatRepository.obtenerGrupoDeEvento(eventoId) ?: return@launch
-            grupoId = grupo.id
-            _uiState.update { it.copy(titulo = grupo.nombre) }
+            llamarApi { eventoRepository.obtenerEvento(eventoId) }.onSuccess { evento ->
+                _uiState.update { it.copy(titulo = evento?.nombre ?: "") }
+            }
             actualizarMensajes()
         }
     }
@@ -57,36 +62,39 @@ class ChatDetalleViewModel(application: Application) : AndroidViewModel(applicat
         _uiState.update { it.copy(texto = valor) }
     }
 
-    // Guarda el mensaje en Room y recarga la conversacion
+    // Envia el mensaje a Xano y recarga la conversacion. Si falla, el texto queda escrito para reintentar
     fun enviar() {
-        val grupo = grupoId ?: return
-        val autor = usuarioId ?: return
+        val evento = eventoId ?: return
+        if (usuarioId == null) return
         val texto = _uiState.value.texto
         if (texto.isBlank()) return
         viewModelScope.launch {
-            chatRepository.enviarMensaje(grupo, autor, texto)
-            _uiState.update { it.copy(texto = "") }
-            actualizarMensajes()
+            llamarApi { chatRepository.enviarMensaje(evento, texto) }.onSuccess {
+                _uiState.update { it.copy(texto = "") }
+                actualizarMensajes()
+            }
         }
     }
 
     private suspend fun actualizarMensajes() {
-        val grupo = grupoId ?: return
-        val mensajes = chatRepository.obtenerMensajes(grupo).map { mensaje ->
-            val emisor = when (mensaje.autorId) {
-                AUTOR_SISTEMA -> "Mygos"
-                usuarioId -> "Tú"
-                else -> usuarioRepository.obtenerUsuario(mensaje.autorId)?.alias ?: "Jugador"
+        val evento = eventoId ?: return
+        llamarApi { chatRepository.obtenerMensajes(evento) }.onSuccess { lista ->
+            val mensajes = lista.map { mensaje ->
+                val emisor = when (mensaje.autorId) {
+                    AUTOR_SISTEMA -> "Mygos"
+                    usuarioId -> "Tú"
+                    else -> mensaje.autorAlias ?: "Jugador"
+                }
+                MensajeUi(
+                    id = mensaje.id,
+                    texto = mensaje.texto,
+                    hora = formatearHora(mensaje.hora),
+                    esMio = mensaje.autorId == usuarioId,
+                    esSistema = mensaje.autorId == AUTOR_SISTEMA,
+                    emisor = emisor
+                )
             }
-            MensajeUi(
-                id = mensaje.id,
-                texto = mensaje.texto,
-                hora = formatearHora(mensaje.hora),
-                esMio = mensaje.autorId == usuarioId,
-                esSistema = mensaje.autorId == AUTOR_SISTEMA,
-                emisor = emisor
-            )
+            _uiState.update { it.copy(mensajes = mensajes) }
         }
-        _uiState.update { it.copy(mensajes = mensajes) }
     }
 }

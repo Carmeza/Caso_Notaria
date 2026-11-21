@@ -35,6 +35,7 @@ fun PantallaCrearCuenta(
     val form by viewModel.form.collectAsState()
     val errores by viewModel.errores.collectAsState()
     val cargando by viewModel.cargando.collectAsState()
+    val errorRegistro by viewModel.errorRegistro.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -113,6 +114,9 @@ fun PantallaCrearCuenta(
             }
             errores.nivel?.let {
                 Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            }
+            errorRegistro?.let {
+                Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
             }
 
             Spacer(modifier = Modifier.height(8.dp))

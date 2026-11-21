@@ -1,70 +1,58 @@
 package com.example.caso_notaria.repository
 
 import com.example.caso_notaria.model.Evento
-import com.example.caso_notaria.model.EventoDao
-import com.example.caso_notaria.model.GrupoChat
-import com.example.caso_notaria.model.GrupoChatDao
 import com.example.caso_notaria.model.Inscripcion
-import com.example.caso_notaria.model.InscripcionDao
-import com.example.caso_notaria.model.Mensaje
-import com.example.caso_notaria.model.MensajeDao
 import com.example.caso_notaria.model.Usuario
-import com.example.caso_notaria.model.UsuarioDao
+import com.example.caso_notaria.network.ApiService
+import com.example.caso_notaria.network.aModelo
+import com.example.caso_notaria.network.aRequest
+import com.example.caso_notaria.network.mensajeDeXano
+import retrofit2.HttpException
 
-// autorId de los mensajes automaticos del chat
-const val AUTOR_SISTEMA = 0
+// Eventos, inscripciones y participantes desde la API de Xano
+class EventoRepository(private val api: ApiService) {
 
-// Eventos, inscripciones y participantes
-class EventoRepository(
-    private val eventoDao: EventoDao,
-    private val inscripcionDao: InscripcionDao,
-    private val grupoChatDao: GrupoChatDao,
-    private val usuarioDao: UsuarioDao,
-    private val mensajeDao: MensajeDao
-) {
+    suspend fun obtenerEventos(): List<Evento> = api.obtenerEventos().map { it.aModelo() }
 
-    suspend fun obtenerEventos(): List<Evento> = eventoDao.getAll()
-
-    suspend fun obtenerEvento(id: Int): Evento? = eventoDao.getById(id)
-
-    suspend fun contarInscritos(eventoId: Int): Int = inscripcionDao.contarPorEvento(eventoId)
-
-    suspend fun obtenerParticipantes(eventoId: Int): List<Usuario> = usuarioDao.obtenerParticipantes(eventoId)
-
-    suspend fun estaInscrito(eventoId: Int, usuarioId: Int): Boolean =
-        inscripcionDao.estaInscrito(eventoId, usuarioId)
-
-    // Al quedar inscrito, el usuario entra al grupo de chat del evento.
-    // Devuelve false si ya estaba inscrito, si es el organizador o si no quedan cupos
-    suspend fun inscribirse(eventoId: Int, usuarioId: Int): Boolean {
-        val evento = eventoDao.getById(eventoId) ?: return false
-        if (evento.organizadorId == usuarioId) return false
-        if (inscripcionDao.estaInscrito(eventoId, usuarioId)) return false
-        if (inscripcionDao.contarPorEvento(eventoId) >= evento.cupos) return false
-        inscripcionDao.insert(Inscripcion(eventoId = eventoId, usuarioId = usuarioId))
-
-        // Aviso en el chat del evento. autorId 0 es mensaje del sistema
-        val grupo = grupoChatDao.obtenerPorEvento(eventoId)
-        val usuario = usuarioDao.getById(usuarioId)
-        if (grupo != null && usuario != null) {
-            mensajeDao.insert(
-                Mensaje(grupoId = grupo.id, autorId = AUTOR_SISTEMA, texto = "${usuario.alias} se unió al grupo")
-            )
-        }
-
-        return true
+    // null si el evento no existe
+    suspend fun obtenerEvento(id: Int): Evento? {
+        val respuesta = api.obtenerEvento(id)
+        if (respuesta.code() == 404) return null
+        return respuesta.body()?.aModelo() ?: throw HttpException(respuesta)
     }
 
-    // Guarda el evento y le crea su grupo de chat. Devuelve el id del evento
-    suspend fun publicarEvento(evento: Evento): Int {
-        val id = eventoDao.insert(evento).toInt()
-        grupoChatDao.insert(GrupoChat(eventoId = id, nombre = evento.nombre))
-        return id
+    // Todas las inscripciones. Con estas se cuentan los cupos y se ven los eventos de cada usuario
+    suspend fun obtenerInscripciones(): List<Inscripcion> = api.obtenerInscripciones().map { it.aModelo() }
+
+    suspend fun obtenerParticipantes(eventoId: Int): List<Usuario> =
+        api.obtenerParticipantes(eventoId).map { it.aModelo() }
+
+
+    suspend fun inscribirse(eventoId: Int): String? {
+        val respuesta = api.inscribirse(eventoId)
+        if (respuesta.isSuccessful) return null
+        if (respuesta.code() == 401 || respuesta.code() >= 500) throw HttpException(respuesta)
+        return respuesta.mensajeDeXano() ?: "No pudimos inscribirte en este evento"
     }
 
-    suspend fun obtenerEventosInscritos(usuarioId: Int): List<Evento> =
-        eventoDao.obtenerInscritosPorUsuario(usuarioId)
+    // El organizador es el usuario del token. Devuelve el id del evento nuevo
+    suspend fun publicarEvento(evento: Evento): Int = api.publicarEvento(evento.aRequest()).id
+}
 
-    suspend fun obtenerEventosOrganizados(usuarioId: Int): List<Evento> =
-        eventoDao.obtenerOrganizadosPorUsuario(usuarioId)
+// Calculos que no necesitan internet
+
+// Cantidad de inscritos de cada evento
+fun contarInscritosPorEvento(inscripciones: List<Inscripcion>): Map<Int, Int> =
+    inscripciones.groupingBy { it.eventoId }.eachCount()
+
+// Eventos donde el usuario esta inscrito
+fun eventosInscritos(eventos: List<Evento>, inscripciones: List<Inscripcion>, usuarioId: Int): List<Evento> {
+    val ids = inscripciones.filter { it.usuarioId == usuarioId }.map { it.eventoId }.toSet()
+    return eventos.filter { it.id in ids }
+}
+
+// Eventos con chat para el usuario
+fun eventosDelUsuario(eventos: List<Evento>, inscripciones: List<Inscripcion>, usuarioId: Int): List<Evento> {
+    val inscritos = eventosInscritos(eventos, inscripciones, usuarioId)
+    return eventos.filter { it.organizadorId == usuarioId || it in inscritos }
 }
