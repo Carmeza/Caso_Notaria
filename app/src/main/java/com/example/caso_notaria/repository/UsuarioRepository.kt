@@ -4,7 +4,9 @@ import com.example.caso_notaria.model.Usuario
 import com.example.caso_notaria.network.ApiService
 import com.example.caso_notaria.network.LoginRequest
 import com.example.caso_notaria.network.RegistroRequest
+import com.example.caso_notaria.network.ErrorConMensaje
 import com.example.caso_notaria.network.aModelo
+import com.example.caso_notaria.network.mensajeDeXano
 import retrofit2.HttpException
 
 // Inicio de sesion, registro y sesion guardada
@@ -35,6 +37,9 @@ class UsuarioRepository(
         )
         val respuesta = api.registrar(datos)
         if (respuesta.code() == 403) return null
+        if (respuesta.code() == 400) {
+            throw ErrorConMensaje(respuesta.mensajeDeXano() ?: "Revisa los datos e intenta de nuevo.")
+        }
         val token = respuesta.body()?.authToken ?: throw HttpException(respuesta)
         return guardarSesion(token)
     }
