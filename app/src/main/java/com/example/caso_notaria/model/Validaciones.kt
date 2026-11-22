@@ -19,7 +19,9 @@ object Validaciones {
 
     fun validarContrasena(contrasena: String): String? = when {
         contrasena.isBlank() -> "La contraseña es obligatoria"
-        contrasena.length < 8 -> "Debe tener al menos 8 caracteres"
+        //xano rechaza contrasenas sin letras o sin numeros
+        contrasena.length < 8 || contrasena.none { it.isLetter() } || contrasena.none { it.isDigit() } ->
+            "Mínimo 8 caracteres, con letras y números"
         else -> null
     }
 

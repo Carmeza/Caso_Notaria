@@ -43,6 +43,12 @@ class ValidacionesTest {
     }
 
     @Test
+    fun `contrasena sin letras o sin numeros tiene error`() {
+        assertNotNull(Validaciones.validarContrasena("12345678"))
+        assertNotNull(Validaciones.validarContrasena("mygosmygos"))
+    }
+
+    @Test
     fun `confirmacion igual a la contrasena no tiene error`() {
         assertNull(Validaciones.validarConfirmacion("mygos2026", "mygos2026"))
     }

@@ -69,9 +69,12 @@ fun PantallaDetalleEvento(
         return
     }
     //foto del lugar, si se tomo al publicar el evento. Igual que en CamaraFotoLugar
+    //la foto queda guardada solo en el telefono que la tomo: si no existe aqui, no se muestra
     val context = LocalContext.current
     val foto = remember(evento.fotoUri) {
-        evento.fotoUri?.let { MediaStore.Images.Media.getBitmap(context.contentResolver, Uri.parse(it)) }
+        evento.fotoUri?.let { uri ->
+            runCatching { MediaStore.Images.Media.getBitmap(context.contentResolver, Uri.parse(uri)) }.getOrNull()
+        }
     }
 
     Scaffold(
@@ -270,7 +273,11 @@ fun PantallaDetalleEvento(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Te uniste al chat grupal del evento. Coordina con los otros ${estado.inscritos - 1} jugadores cómo y a qué hora llegar.",
+                    text = when (val otros = estado.inscritos - 1) {
+                        in Int.MIN_VALUE..0 -> "Te uniste al chat grupal del evento. Eres el primero en inscribirte: ahí vas a coordinar con los que se sumen."
+                        1 -> "Te uniste al chat grupal del evento. Coordina con el otro jugador cómo y a qué hora llegar."
+                        else -> "Te uniste al chat grupal del evento. Coordina con los otros $otros jugadores cómo y a qué hora llegar."
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
