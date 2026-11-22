@@ -97,7 +97,16 @@ fun PantallaEventos(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-
+        // si falla el reload pero ya habia eventos cargados, se avisa arriba de la lista
+        estado.error?.let { mensaje ->
+            if (estado.eventosFiltrados.isNotEmpty()) {
+                Text(
+                    text = mensaje,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+        }
         when {
             estado.cargando -> {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().weight(1f)) {
